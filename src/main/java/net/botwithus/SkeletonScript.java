@@ -2,33 +2,32 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
+import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.game.*;
+import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
+import net.botwithus.rs3.game.hud.interfaces.Interfaces;
+import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
 import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
-import net.botwithus.rs3.game.queries.results.ResultSet;
-import net.botwithus.internal.scripts.ScriptDefinition;
-import net.botwithus.rs3.game.actionbar.ActionBar;
-import net.botwithus.rs3.game.hud.interfaces.Interfaces;
-import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.objects.SceneObjectQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
-
+import net.botwithus.rs3.game.queries.results.ResultSet;
 import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
-import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.scene.entities.object.SceneObject;
-
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
-import net.botwithus.rs3.util.Regex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
@@ -95,7 +94,7 @@ public class SkeletonScript extends LoopingScript {
             case PRAYER -> {
                 hasInteractedWithLootAll = false;
                 hasInteractedWithStart = false;
-                useAltarofWar();
+                useAltarOfWar();
             }
             case BANKING -> {
                 UseBankChest();
@@ -160,23 +159,30 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void useAltarofWar() {
-        if (WalkTo(3303, 10127)) {
+    private void useAltarOfWar() {
+        if(getLocalPlayer() == null)
+            return;
+
             EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Altar of War").results();
             if (!query.isEmpty()) {
                 SceneObject altar = query.nearest();
-                altar.interact("Pray");
-                println("Praying!");
-                Execution.delayUntil(5000, () -> {
-                    assert getLocalPlayer() != null;
-                    return getLocalPlayer().getPrayerPoints() > 9000;
-                });
-                botState = BotState.BANKING;
+                if (altar != null) {
+                    altar.interact("Pray");
+                    println("Praying!");
+                    Execution.delayUntil(5000, () ->
+                        getLocalPlayer().getPrayerPoints() >= 9000
+                    );
+                    botState = BotState.BANKING;
+                }else {
+                    println("Failed to interact with Altar of War.");
+                }
             }
-        }
     }
 
     private void UseBankChest() {
+        if(getLocalPlayer() == null)
+            return;
+
         boolean success = false;
             EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Bank chest").results();
             if (!query.isEmpty()) {
@@ -211,6 +217,9 @@ public class SkeletonScript extends LoopingScript {
                 println("Attempting to enter portal...");
 
                 boolean hasSurged = false;
+                if(portal.getCoordinate() == null)
+                    return;
+
                 while (Distance.between(getLocalPlayer().getCoordinate(), portal.getCoordinate()) > 0) {
                     Coordinate playerCoord = getLocalPlayer().getCoordinate();
 
@@ -278,9 +287,11 @@ public class SkeletonScript extends LoopingScript {
         EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(120046).option("Enter").results();
         if (!results.isEmpty()) {
             SceneObject colloseum = results.nearest();
-            colloseum.interact("Enter");
-            println("Entering colloseum!");
-            botState = BotState.INTERACTWITHDIALOG;
+            if(colloseum != null) {
+                colloseum.interact("Enter");
+                println("Entering colloseum!");
+                botState = BotState.INTERACTWITHDIALOG;
+            }
         }
     }
 
@@ -465,7 +476,11 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void loot() {
-        if (getLocalPlayer() != null || !getLocalPlayer().inCombat()) {
+        if (getLocalPlayer() != null) {
+            if(!getLocalPlayer().inCombat())
+            {
+                return;
+            }
             List<String> itemNames = Arrays.asList(
                     "Coins", "Cannonball", "Hydrix bolt tips",
                     "Large plated orikalkum salvage", "Dragonkin bones",
@@ -526,9 +541,6 @@ public class SkeletonScript extends LoopingScript {
         botState = BotState.WARSRETREAT;
     }
 
-    public void setBotState(BotState botState) {
-        this.botState = botState;
-    }
 
     private boolean scriptureOfWenActive = false;
 
