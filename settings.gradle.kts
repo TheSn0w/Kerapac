@@ -1,2 +1,2 @@
-rootProject.name = "Helwyr"
+rootProject.name = "Kerapac"
 

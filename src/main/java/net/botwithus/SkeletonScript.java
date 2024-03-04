@@ -446,11 +446,13 @@ public class SkeletonScript extends LoopingScript {
                     }
                     if (Client.getLocalPlayer().getTarget() != null) {
                         int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
-                        if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000) {
+                        if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000 && Backpack.contains("Vulnerability bomb")) {
                             boolean success = ActionBar.useItem("Vulnerability bomb", "Throw");
                             if (success) {
                                 println("Eat this vuln bomb!   " + Client.getLocalPlayer().getTarget().getName());
                                 Execution.delayUntil(RandomGenerator.nextInt(2000, 3000), () -> !Client.getLocalPlayer().inCombat());
+                            }else {
+                                println("Failed to use Vulnerability bomb.");
                             }
                         }
                     }
