@@ -45,6 +45,7 @@ public class SkeletonScript extends LoopingScript {
     boolean useInvokeDeath;
     boolean useLuckoftheDwarves;
     boolean eatfood;
+    boolean useCauldron;
     boolean useVulnBomb;
     boolean useRuination;
     boolean useDeflectMagic;
@@ -108,7 +109,7 @@ public class SkeletonScript extends LoopingScript {
                 }
             }
             case CAULDRON -> {
-                if (VarManager.getVarbitValue(26037) == 0) {
+                if (VarManager.getVarbitValue(26037) == 0 && (useCauldron)) {
                     useCauldron();
                 } else { botState = BotState.BANKING;
                     println("Cauldron buff is active!");

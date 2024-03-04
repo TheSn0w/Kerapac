@@ -65,6 +65,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.restartScript();
                 }
                 script.startAtPortal = ImGui.Checkbox("Start at Portal", script.startAtPortal);
+                script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
                 script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                 script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
                 script.useoverload = ImGui.Checkbox("Use Overload", script.useoverload);
