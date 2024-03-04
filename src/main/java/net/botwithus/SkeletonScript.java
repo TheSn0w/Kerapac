@@ -177,14 +177,18 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void UseBankChest() {
-        if (WalkTo(3299, 10131)) {
+        boolean success = false;
             EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Bank chest").results();
             if (!query.isEmpty()) {
                 println("Loading preset!");
                 SceneObject bankChest = query.nearest();
-                assert bankChest != null;
-                bankChest.interact("Load Last Preset from");
-                Execution.delay(RandomGenerator.nextInt(4000, 5000));
+                if(bankChest != null) {
+                    bankChest.interact("Load Last Preset from");
+                    success = true;
+                }
+                if(success) {
+                    Execution.delay(RandomGenerator.nextInt(4000, 5000));
+                }
                 //wait at bank if we aren't full health
                 if (getLocalPlayer().getCurrentHealth() < getLocalPlayer().getMaximumHealth()) {
                     println("Healing up!");
@@ -193,7 +197,6 @@ public class SkeletonScript extends LoopingScript {
                     botState = BotState.PORTAL;
                 }
             }
-        }
     }
 
     private void walkToPortal() {
@@ -294,11 +297,11 @@ public class SkeletonScript extends LoopingScript {
     private Coordinate kerapacPhase1StartCoord = null;
 
     public void kerapacPhase1() {
-        assert Client.getLocalPlayer() != null;
-        kerapacPhase1StartCoord = Client.getLocalPlayer().getCoordinate();
+        assert getLocalPlayer() != null;
+        kerapacPhase1StartCoord = getLocalPlayer().getCoordinate();
 
         Execution.delay(RandomGenerator.nextInt(1000, 1500));
-        Coordinate currentCoord = Client.getLocalPlayer().getCoordinate();
+        Coordinate currentCoord = getLocalPlayer().getCoordinate();
         ActionBar.useAbility("Surge");
         println("Ability 'Surge' used. Waiting for cooldown...");
 
@@ -378,7 +381,7 @@ public class SkeletonScript extends LoopingScript {
                         Coordinate kerapacLocation = Objects.requireNonNull(npc.getCoordinate());
 
                         if (Travel.walkTo(kerapacLocation)) {
-                            while (Distance.between(Client.getLocalPlayer().getCoordinate(), kerapacLocation) > 1) {
+                            while (Distance.between(getLocalPlayer().getCoordinate(), kerapacLocation) > 1) {
 
                                 if (ActionBar.getCooldown("Anticipation1") == 0) {
                                     ActionBar.useAbility("Anticipation1");
@@ -444,13 +447,13 @@ public class SkeletonScript extends LoopingScript {
                             }
                         }
                     }
-                    if (Client.getLocalPlayer().getTarget() != null) {
+                    if (getLocalPlayer().getTarget() != null) {
                         int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
                         if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000 && Backpack.contains("Vulnerability bomb")) {
                             boolean success = ActionBar.useItem("Vulnerability bomb", "Throw");
                             if (success) {
-                                println("Eat this vuln bomb!   " + Client.getLocalPlayer().getTarget().getName());
-                                Execution.delayUntil(RandomGenerator.nextInt(2000, 3000), () -> !Client.getLocalPlayer().inCombat());
+                                println("Eat this vuln bomb!   " + getLocalPlayer().getTarget().getName());
+                                Execution.delayUntil(RandomGenerator.nextInt(2000, 3000), () -> !getLocalPlayer().inCombat());
                             }else {
                                 println("Failed to use Vulnerability bomb.");
                             }
@@ -490,15 +493,13 @@ public class SkeletonScript extends LoopingScript {
                     if (groundItem != null) {
                         groundItem.interact("Take");
                         Execution.delayUntil(5000, () -> getLocalPlayer().isMoving());
-                        if (getLocalPlayer().isMoving() && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
+                        if (getLocalPlayer().isMoving() && groundItem.getCoordinate() != null && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
                             ActionBar.useAbility("Surge");
                             Execution.delay(200); // Wait after surging
                         }
-
-                        if (Travel.walkTo(groundItem.getCoordinate())) {
+                        if(groundItem.getCoordinate() != null) {
                             Execution.delayUntil(5000, () -> Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) <= 10); // Wait for the player to walk to the item
                         }
-
                         if (groundItem.interact("Take")) {
                             println("Taking " + itemName);
                             Execution.delay(RandomGenerator.nextInt(700, 900));
@@ -596,9 +597,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void usePrayerOrRestorePots() {
-        Player localPlayer = Client.getLocalPlayer();
+        Player localPlayer = getLocalPlayer();
         if (localPlayer != null) {
-            int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
+            int currentPrayerPoints = LOCAL_PLAYER.getPrayerPoints();
             if (currentPrayerPoints < prayerPointsThreshold) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
@@ -626,7 +627,7 @@ public class SkeletonScript extends LoopingScript {
 
 
     public void drinkOverloads() {
-        Player localPlayer = Client.getLocalPlayer();
+        Player localPlayer = getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
             if (VarManager.getVarbitValue(26037) == 0) {
                 if (localPlayer.getAnimationId() == 18000) {
@@ -638,10 +639,13 @@ public class SkeletonScript extends LoopingScript {
                         .results();
                 if (!overload.isEmpty()) {
                     Item overloadItem = overload.first();
-                    assert overloadItem != null;
-                    Backpack.interact(overloadItem.getName(), "Drink");
-                    println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
-                    Execution.delay(RandomGenerator.nextInt(500, 600));
+                    if (overloadItem != null) {
+                        Backpack.interact(overloadItem.getName(), "Drink");
+                        println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
+                        Execution.delay(RandomGenerator.nextInt(500, 600));
+                    }else {
+                        println("No overload found!");
+                    }
                 }
             }
         }
@@ -653,10 +657,13 @@ public class SkeletonScript extends LoopingScript {
                 ResultSet<Item> food = InventoryItemQuery.newQuery(93).option("Eat").results();
                 if (!food.isEmpty()) {
                     Item eat = food.first();
-                    assert eat != null;
-                    Backpack.interact(eat.getName(), 1);
-                    println("Eating " + eat.getName());
-                    Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
+                    if(eat != null) {
+                        Backpack.interact(eat.getName(), 1);
+                        println("Eating " + eat.getName());
+                        Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
+                    }else {
+                        println("Failed to eat!");
+                    }
                 } else {
                     println("No food found!");
                 }
@@ -699,7 +706,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void useWeaponPoison() {
-        Player localPlayer = Client.getLocalPlayer();
+        Player localPlayer = getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
             // Check if interface 284 does NOT contain a component with sprite ID 30095
             if (!hasComponentWithSpriteId(284, 30095)) {
