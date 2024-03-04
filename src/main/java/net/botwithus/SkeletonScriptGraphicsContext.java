@@ -65,9 +65,16 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.restartScript();
                 }
                 script.startAtPortal = ImGui.Checkbox("Start at Portal", script.startAtPortal);
+                script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                 script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
                 script.useoverload = ImGui.Checkbox("Use Overload", script.useoverload);
                 script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
+                script.useProtectMagic = ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic);
+                script.useDeflectMagic = ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic);
+                script.useRuination = ImGui.Checkbox("Use Ruination", script.useRuination);
+                script.useVulnBomb = ImGui.Checkbox("Use Vulnerability bomb", script.useVulnBomb);
+                script.useInvokeDeath = ImGui.Checkbox("Use Invoke Death", script.useInvokeDeath);
+                script.useLuckoftheDwarves = ImGui.Checkbox("Use Luck of the Dwarves Switch", script.useLuckoftheDwarves);
                 ImGui.SeparatorText("Food/Prayer Options");
                 script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
                 script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
@@ -88,6 +95,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         healthFeedbackMessage = "Invalid number format for Health Threshold.";
                     }
                 }
+                ImGui.SameLine();
+                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
                 if (!healthFeedbackMessage.isEmpty()) {
                     ImGui.Text(healthFeedbackMessage);
                 }
@@ -109,6 +118,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         prayerFeedbackMessage = "Invalid number format.";
                     }
                 }
+                ImGui.SameLine();
+                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
 
                 if (!prayerFeedbackMessage.isEmpty()) {
                     ImGui.Text(prayerFeedbackMessage);
