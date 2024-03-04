@@ -163,7 +163,7 @@ public class SkeletonScript extends LoopingScript {
         if(getLocalPlayer() == null)
             return;
 
-            EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Altar of War").results();
+        EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Altar of War").results();
             if (!query.isEmpty()) {
                 SceneObject altar = query.nearest();
                 if (altar != null) {
@@ -206,61 +206,52 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void walkToPortal() {
-        if (getLocalPlayer() != null) {
-            EntityResultSet<SceneObject> sceneObjectQuery = SceneObjectQuery.newQuery().name("Portal (Kerapac)").results();
-            if (!sceneObjectQuery.isEmpty()) {
-                SceneObject portal = sceneObjectQuery.nearest();
-                assert portal != null;
+        Player localPlayer = getLocalPlayer();
+        if (localPlayer == null) {
+            return;
+        }
 
-                // Step 1: Interact with the portal initially to start moving towards it
-                portal.interact("Enter");
-                println("Attempting to enter portal...");
+        EntityResultSet<SceneObject> sceneObjectQuery = SceneObjectQuery.newQuery().name("Portal (Kerapac)").results();
+        if (sceneObjectQuery.isEmpty()) {
+            return;
+        }
 
-                boolean hasSurged = false;
-                if(portal.getCoordinate() == null)
-                    return;
+        SceneObject portal = sceneObjectQuery.nearest();
+        if (portal == null || portal.getCoordinate() == null) {
+            return;
+        }
 
-                while (Distance.between(getLocalPlayer().getCoordinate(), portal.getCoordinate()) > 0) {
-                    Coordinate playerCoord = getLocalPlayer().getCoordinate();
+        portal.interact("Enter");
+        println("Attempting to enter portal...");
 
-                    // Check if the player is between the specified coordinates and Surge is off cooldown
-                    if (!hasSurged && playerCoord.getX() <= 3295 && playerCoord.getX() >= 3293 &&
-                            playerCoord.getY() == 10134 && ActionBar.getCooldown("Surge") == 0) {
+        Coordinate playerCoord = localPlayer.getCoordinate();
+        if (Distance.between(playerCoord, portal.getCoordinate()) <= 0) {
+            return;
+        }
 
-                        ActionBar.useAbility("Surge");
-                        println("Using 'Surge' to reach the portal quicker.");
-                        hasSurged = true; // Prevents multiple surges
+        if (playerCoord.getX() <= 3295 && playerCoord.getX() >= 3293 && playerCoord.getY() == 10134 && ActionBar.getCooldown("Surge") == 0) {
+            ActionBar.useAbility("Surge");
+            println("Using 'Surge' to reach the portal quicker.");
+            Execution.delay(200);
+            portal.interact("Enter");
+            println("Re-engaging portal after surging towards it.");
+        }
 
-                        // Wait for the surge effect to complete
-                        Execution.delay(200);
-                    }
+        Execution.delay(100);
 
-                    if (hasSurged) {
-                        // Step 2: After using Surge, interact with the portal again
-                        portal.interact("Enter");
-                        println("Re-engaging portal after surging towards it.");
-                        break;
-                    }
+        boolean success = Execution.delayUntil(5000, () -> {
+            EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery()
+                    .id(120046)
+                    .option("Enter")
+                    .results();
+            return !results.isEmpty();
+        });
 
-                    Execution.delay(100); // Check every 100 milliseconds
-                }
-
-                // Wait until the portal is available to enter
-                boolean success = Execution.delayUntil(5000, () -> {
-                    EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery()
-                            .id(120046)
-                            .option("Enter")
-                            .results();
-                    return !results.isEmpty();
-                });
-
-                if (success) {
-                    botState = BotState.KERAPACPORTAL;
-                } else {
-                    println("Portal did not become available after 5 seconds. Retrying...");
-                    walkToPortal(); // Try to walk to the portal again
-                }
-            }
+        if (success) {
+            botState = BotState.KERAPACPORTAL;
+        } else {
+            println("Portal did not become available after 5 seconds. Retrying...");
+            walkToPortal(); // Try to walk to the portal again
         }
     }
 
@@ -308,7 +299,9 @@ public class SkeletonScript extends LoopingScript {
     private Coordinate kerapacPhase1StartCoord = null;
 
     public void kerapacPhase1() {
-        assert getLocalPlayer() != null;
+        if(getLocalPlayer() == null)
+            return;
+
         kerapacPhase1StartCoord = getLocalPlayer().getCoordinate();
 
         Execution.delay(RandomGenerator.nextInt(1000, 1500));
@@ -403,7 +396,6 @@ public class SkeletonScript extends LoopingScript {
                             Execution.delay(RandomGenerator.nextInt(1750, 1850));
                             npc.interact("Attack");
                             println("Attacking Kerapac after reaching his location.");
-                            surged = false;
                         }
                     } else if (animationId == 34195) {
                         Coordinate bottomLeft = currentCoord.derive(-23, -10, 0);
@@ -596,7 +588,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private boolean shouldActivateScriptureOfWen() {
-        assert getLocalPlayer() != null;
+        if(getLocalPlayer() == null)
+            return false;
+
         return getLocalPlayer().inCombat() && (UseScriptureOfWen);
     }
 
@@ -728,11 +722,14 @@ public class SkeletonScript extends LoopingScript {
                         .results();
                 if (!weaponPoisonItems.isEmpty()) {
                     Item weaponPoison = weaponPoisonItems.first();
-                    assert weaponPoison != null;
-                    // Interact with the first "Weapon Poison" found
-                    Backpack.interact(weaponPoison.getName(), "Apply"); // Adjust the action as necessary
-                    println("Using Weapon Poison: " + weaponPoison.getName() + " ID: " + weaponPoison.getId());
-                    Execution.delay(RandomGenerator.nextInt(500, 600));
+                    if (weaponPoison != null) {
+                        // Interact with the first "Weapon Poison" found
+                        Backpack.interact(weaponPoison.getName(), "Apply"); // Adjust the action as necessary
+                        println("Using Weapon Poison: " + weaponPoison.getName() + " ID: " + weaponPoison.getId());
+                        Execution.delay(RandomGenerator.nextInt(500, 600));
+                    } else {
+                        println("No weapon poison found!");
+                    }
                 }
             }
         }
