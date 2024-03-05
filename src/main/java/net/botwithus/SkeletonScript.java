@@ -410,7 +410,7 @@ public class SkeletonScript extends LoopingScript {
                         shouldSurge = true;
                     } else if (animationId == 34194 && shouldSurge && !surged) {
                         println("Hes Flying High.... dodging this shit...");
-                        Execution.delay(RandomGenerator.nextInt(550, 600));
+                        Execution.delay(RandomGenerator.nextInt(550, 560));
                         ActionBar.useAbility("Surge");
                         println("Dodged MWAHA!");
                         surged = true;
