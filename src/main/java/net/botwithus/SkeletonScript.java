@@ -2,32 +2,33 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
-import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.game.*;
-import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
-import net.botwithus.rs3.game.hud.interfaces.Interfaces;
-import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
 import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
+import net.botwithus.rs3.game.queries.results.ResultSet;
+import net.botwithus.internal.scripts.ScriptDefinition;
+import net.botwithus.rs3.game.actionbar.ActionBar;
+import net.botwithus.rs3.game.hud.interfaces.Interfaces;
+import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.objects.SceneObjectQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
-import net.botwithus.rs3.game.queries.results.ResultSet;
+
 import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
+import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.scene.entities.object.SceneObject;
+
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
+import net.botwithus.rs3.util.Regex;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
@@ -36,20 +37,13 @@ import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlaye
 public class SkeletonScript extends LoopingScript {
 
     private BotState botState = BotState.IDLE;
+    private int totalValue = 0;
     public boolean runScript;
     boolean UseScriptureOfWen;
     private int prayerPointsThreshold = 1000;
     boolean useprayer;
     boolean useoverload;
-    boolean HaveMobile;
-    boolean useInvokeDeath;
-    boolean useLuckoftheDwarves;
     boolean eatfood;
-    boolean useCauldron;
-    boolean useVulnBomb;
-    boolean useRuination;
-    boolean useDeflectMagic;
-    boolean useProtectMagic;
     boolean useSaraBrew;
     boolean useSaraBrewandBlubber;
     boolean useWeaponPoison;
@@ -63,7 +57,7 @@ public class SkeletonScript extends LoopingScript {
         PRAYER,
         BANKING,
         PORTAL,
-        CAULDRON,
+        ADRENALINECRYSTAL,
         KERAPACPORTAL,
         INTERACTWITHDIALOG,
         KERAPAC,
@@ -101,19 +95,7 @@ public class SkeletonScript extends LoopingScript {
             case PRAYER -> {
                 hasInteractedWithLootAll = false;
                 hasInteractedWithStart = false;
-                if (getLocalPlayer() != null && getLocalPlayer().getPrayerPoints() < 9000) {
-                    useAltarOfWar();
-                } else {
-                    botState = BotState.CAULDRON;
-                    println("Prayer points are over 9000!");
-                }
-            }
-            case CAULDRON -> {
-                if (VarManager.getVarbitValue(26037) == 0 && (useCauldron)) {
-                    useCauldron();
-                } else { botState = BotState.BANKING;
-                    println("Cauldron buff is active!");
-                }
+                useAltarofWar();
             }
             case BANKING -> {
                 UseBankChest();
@@ -155,22 +137,17 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void activatePrayers() {
-        boolean Ruination = VarManager.getVarbitValue(53280) == 0;
-        boolean DeflectMagic = VarManager.getVarbitValue(16768) == 0;
-        boolean ProtectMagic = VarManager.getVarbitValue(16745) == 0;
+        int varbitValue = VarManager.getVarbitValue(16768);
 
-
-        if (Ruination && useRuination) {
-            ActionBar.usePrayer("Ruination");
-            Execution.delay(RandomGenerator.nextInt(10, 20));
-        }
-        if (DeflectMagic && useDeflectMagic) {
+        if (varbitValue == 0) {
             ActionBar.usePrayer("Deflect Magic");
             Execution.delay(RandomGenerator.nextInt(10, 20));
+            println("Activating 'Deflect Magic' prayer.");
         }
-        if (ProtectMagic && useProtectMagic) {
-            ActionBar.usePrayer("Protect Magic");
-            Execution.delay(RandomGenerator.nextInt(10, 20));
+        if (VarManager.getVarbitValue(53280) == 0) {
+            ActionBar.usePrayer("Ruination");
+            Execution.delay(RandomGenerator.nextInt(50, 70));
+            println("Activating 'Ruination' prayer.");
         }
     }
 
@@ -183,42 +160,31 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void useAltarOfWar() {
-        if(getLocalPlayer() == null)
-            return;
-
-        EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Altar of War").results();
+    private void useAltarofWar() {
+        if (WalkTo(3303, 10127)) {
+            EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Altar of War").results();
             if (!query.isEmpty()) {
                 SceneObject altar = query.nearest();
-                if (altar != null) {
-                    altar.interact("Pray");
-                    println("Praying!");
-                    Execution.delayUntil(5000, () ->
-                        getLocalPlayer().getPrayerPoints() >= 9000
-                    );
-                    botState = BotState.CAULDRON;
-                }else {
-                    println("Failed to interact with Altar of War.");
-                }
+                altar.interact("Pray");
+                println("Praying!");
+                Execution.delayUntil(5000, () -> {
+                    assert getLocalPlayer() != null;
+                    return getLocalPlayer().getPrayerPoints() > 9000;
+                });
+                botState = BotState.BANKING;
             }
+        }
     }
 
     private void UseBankChest() {
-        if(getLocalPlayer() == null)
-            return;
-
-        boolean success = false;
+        if (WalkTo(3299, 10131)) {
             EntityResultSet<SceneObject> query = SceneObjectQuery.newQuery().name("Bank chest").results();
             if (!query.isEmpty()) {
                 println("Loading preset!");
                 SceneObject bankChest = query.nearest();
-                if(bankChest != null) {
-                    bankChest.interact("Load Last Preset from");
-                    success = true;
-                }
-                if(success) {
-                    Execution.delay(RandomGenerator.nextInt(4000, 5000));
-                }
+                assert bankChest != null;
+                bankChest.interact("Load Last Preset from");
+                Execution.delay(RandomGenerator.nextInt(4000, 5000));
                 //wait at bank if we aren't full health
                 if (getLocalPlayer().getCurrentHealth() < getLocalPlayer().getMaximumHealth()) {
                     println("Healing up!");
@@ -227,82 +193,62 @@ public class SkeletonScript extends LoopingScript {
                     botState = BotState.PORTAL;
                 }
             }
+        }
     }
 
     private void walkToPortal() {
-        Player localPlayer = getLocalPlayer();
-        if (localPlayer == null) {
-            println("Local player not found.");
-            return;
-        }
+        if (getLocalPlayer() != null) {
+            EntityResultSet<SceneObject> sceneObjectQuery = SceneObjectQuery.newQuery().name("Portal (Kerapac)").results();
+            if (!sceneObjectQuery.isEmpty()) {
+                SceneObject portal = sceneObjectQuery.nearest();
+                assert portal != null;
 
-        EntityResultSet<SceneObject> sceneObjectQuery = SceneObjectQuery.newQuery().name("Adrenaline crystal").results();
-        if (sceneObjectQuery.isEmpty()) {
-            println("Adrenaline crystal not found.");
-            return;
-        }
+                // Step 1: Interact with the portal initially to start moving towards it
+                portal.interact("Enter");
+                println("Attempting to enter portal...");
 
-        SceneObject portal = sceneObjectQuery.nearest();
-        if (portal == null) {
-            println("Nearest portal not found.");
-            return;
-        }
+                boolean hasSurged = false;
+                while (Distance.between(getLocalPlayer().getCoordinate(), portal.getCoordinate()) > 0) {
+                    Coordinate playerCoord = getLocalPlayer().getCoordinate();
 
-        portal.interact("Channel");
-        println("Attempting to get adrenaline...");
+                    // Check if the player is between the specified coordinates and Surge is off cooldown
+                    if (!hasSurged && playerCoord.getX() <= 3295 && playerCoord.getX() >= 3293 &&
+                            playerCoord.getY() == 10134 && ActionBar.getCooldown("Surge") == 0) {
 
-        boolean hasSurged = false;
-        while (Distance.between(getLocalPlayer().getCoordinate(), portal.getCoordinate()) > 0) {
-            Coordinate playerCoord = getLocalPlayer().getCoordinate();
+                        ActionBar.useAbility("Surge");
+                        println("Using 'Surge' to reach the portal quicker.");
+                        hasSurged = true; // Prevents multiple surges
 
-            // Check if the player is between the specified coordinates and Surge is off cooldown
-            if (!hasSurged && (HaveMobile) && playerCoord.getX() <= 3295 && playerCoord.getX() >= 3293 &&
-                    playerCoord.getY() == 10134 && ActionBar.getCooldown("Surge") == 0) {
+                        // Wait for the surge effect to complete
+                        Execution.delay(200);
+                    }
 
-                ActionBar.useAbility("Surge");
-                println("Using 'Surge' to reach the portal quicker.");
-                hasSurged = true; // Prevents multiple surges
+                    if (hasSurged) {
+                        // Step 2: After using Surge, interact with the portal again
+                        portal.interact("Enter");
+                        println("Re-engaging portal after surging towards it.");
+                        break;
+                    }
 
-                // Wait for the surge effect to complete
-                Execution.delay(200);
+                    Execution.delay(100); // Check every 100 milliseconds
+                }
+
+                // Wait until the portal is available to enter
+                boolean success = Execution.delayUntil(5000, () -> {
+                    EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery()
+                            .id(120046)
+                            .option("Enter")
+                            .results();
+                    return !results.isEmpty();
+                });
+
+                if (success) {
+                    botState = BotState.KERAPACPORTAL;
+                } else {
+                    println("Portal did not become available after 5 seconds. Retrying...");
+                    walkToPortal(); // Try to walk to the portal again
+                }
             }
-
-            if (hasSurged) {
-                // Step 2: After using Surge, interact with the portal again
-                portal.interact("Channel");
-                break;
-            }
-
-            Execution.delay(100); // Check every 100 milliseconds
-        }
-
-        // Wait until adrenaline is charged or a timeout occurs
-        boolean adrenalineCharged = Execution.delayUntil(15000, () -> getLocalPlayer().getAdrenaline() >= 1000);
-        if (adrenalineCharged) {
-            println("Adrenaline charged, attempting to interact with the Kerapac portal.");
-            interactWithKerapacPortal(); // Method to interact with Kerapac portal
-        } else {
-            println("Adrenaline not charged within timeout, retrying...");
-            walkToPortal(); // Recursive call to retry
-        }
-    }
-
-    private void interactWithKerapacPortal() {
-        EntityResultSet<SceneObject> kerapacPortalQuery = SceneObjectQuery.newQuery().name("Portal (Kerapac)").results();
-        if (!kerapacPortalQuery.isEmpty()) {
-            SceneObject kerapacPortal = kerapacPortalQuery.nearest();
-            if (kerapacPortal != null) {
-                kerapacPortal.interact("Enter");
-                println("Interacting with portal...");
-                botState = BotState.KERAPACPORTAL;
-                Execution.delay(RandomGenerator.nextInt(2000, 3000));
-            } else {
-                println("Portal did not become available. Retrying...");
-                walkToPortal(); // Recursive call to retry
-            }
-        } else {
-            println("Portal did not become available. Retrying...");
-            walkToPortal(); // Recursive call to retry
         }
     }
 
@@ -325,24 +271,22 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void InteractWithColloseum() {
-        Execution.delay(RandomGenerator.nextInt(1250, 1500));
+        Execution.delay(RandomGenerator.nextInt(2000, 2500));
         EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(120046).option("Enter").results();
         if (!results.isEmpty()) {
             SceneObject colloseum = results.nearest();
-            if(colloseum != null) {
-                colloseum.interact("Enter");
-                println("Entering colloseum!");
-                botState = BotState.INTERACTWITHDIALOG;
-            }
+            colloseum.interact("Enter");
+            println("Entering colloseum!");
+            botState = BotState.INTERACTWITHDIALOG;
         }
     }
 
     private void InteractWithDialog() {
         if (Interfaces.isOpen(1591)) {
-            Execution.delay(RandomGenerator.nextInt(800, 1000));
+            Execution.delay(RandomGenerator.nextInt(1750, 2000));
             Start();
             println("Interacting with dialog!");
-            Execution.delay(RandomGenerator.nextInt(1200, 1700));
+            Execution.delay(RandomGenerator.nextInt(1500, 2000));
             botState = BotState.KERAPAC;
         }
     }
@@ -350,13 +294,11 @@ public class SkeletonScript extends LoopingScript {
     private Coordinate kerapacPhase1StartCoord = null;
 
     public void kerapacPhase1() {
-        if(getLocalPlayer() == null)
-            return;
-
-        kerapacPhase1StartCoord = getLocalPlayer().getCoordinate();
+        assert Client.getLocalPlayer() != null;
+        kerapacPhase1StartCoord = Client.getLocalPlayer().getCoordinate();
 
         Execution.delay(RandomGenerator.nextInt(1000, 1500));
-        Coordinate currentCoord = getLocalPlayer().getCoordinate();
+        Coordinate currentCoord = Client.getLocalPlayer().getCoordinate();
         ActionBar.useAbility("Surge");
         println("Ability 'Surge' used. Waiting for cooldown...");
 
@@ -382,13 +324,19 @@ public class SkeletonScript extends LoopingScript {
             if (UseScriptureOfWen) {
                 manageScriptureOfWen();
                 Execution.delay(RandomGenerator.nextInt(10, 20));
-
-
-
+                if (useprayer)
+                    usePrayerOrRestorePots();
+                Execution.delay(RandomGenerator.nextInt(20, 30));
+                if (useWeaponPoison)
+                    useWeaponPoison();
+                Execution.delay(RandomGenerator.nextInt(10, 20));
+                if (useoverload)
+                    drinkOverloads();
+                Execution.delay(RandomGenerator.nextInt(20, 30));
+                if (eatfood)
+                    eatFood();
             }
             EntityResultSet<Npc> npcs = NpcQuery.newQuery().name("Kerapac, the bound").results();
-
-
 
             for (Npc npc : npcs) {
                 int animationId = npc.getAnimationId();
@@ -410,7 +358,7 @@ public class SkeletonScript extends LoopingScript {
                         shouldSurge = true;
                     } else if (animationId == 34194 && shouldSurge && !surged) {
                         println("Hes Flying High.... dodging this shit...");
-                        Execution.delay(RandomGenerator.nextInt(550, 560));
+                        Execution.delay(600);
                         ActionBar.useAbility("Surge");
                         println("Dodged MWAHA!");
                         surged = true;
@@ -430,11 +378,10 @@ public class SkeletonScript extends LoopingScript {
                         Coordinate kerapacLocation = Objects.requireNonNull(npc.getCoordinate());
 
                         if (Travel.walkTo(kerapacLocation)) {
-                            while (Distance.between(getLocalPlayer().getCoordinate(), kerapacLocation) > 1) {
+                            while (Distance.between(Client.getLocalPlayer().getCoordinate(), kerapacLocation) > 1) {
 
-                                if (ActionBar.getCooldown("Anticipation") == 0) {
-                                    ActionBar.useAbility("Anticipation");
-                                    println("Tried to use 'Anticipation' to avoid Kerapac's stun.");
+                                if (ActionBar.getCooldown("Anticipation1") == 0) {
+                                    ActionBar.useAbility("Anticipation1");
                                 }
                                 Execution.delay(100);
                             }
@@ -442,6 +389,7 @@ public class SkeletonScript extends LoopingScript {
                             Execution.delay(RandomGenerator.nextInt(1750, 1850));
                             npc.interact("Attack");
                             println("Attacking Kerapac after reaching his location.");
+                            surged = false;
                         }
                     } else if (animationId == 34195) {
                         Coordinate bottomLeft = currentCoord.derive(-23, -10, 0);
@@ -467,68 +415,42 @@ public class SkeletonScript extends LoopingScript {
                         println("Bitch is dead, lol lets see what goodies we got :D ");
                         botState = BotState.LOOTING;
                         return; // Exit if the condition is met and the action is performed
-                    }
-                    if (Interfaces.isOpen(1181)) {
-                        // Query for a specific component related to game phases
+                    } else if (Interfaces.isOpen(1181)) {
                         ComponentQuery phaseQuery = ComponentQuery.newQuery(1181).componentIndex(21);
                         ResultSet<Component> phaseResults = phaseQuery.results();
                         Component phaseComponent = phaseResults.first();
 
-                        // Check for phase 4 and if Invoke Death should be used
-                        if (useInvokeDeath && phaseComponent != null && "Phase: 4".equals(phaseComponent.getText())) {
-                            // Query for a specific component by sprite ID
+                        if (phaseComponent != null && "Phase: 4".equals(phaseComponent.getText())) {
                             ComponentQuery query = ComponentQuery.newQuery(1490).spriteId(30100);
                             ResultSet<Component> results = query.results();
 
-                            // If no results found and cooldown is zero, use the ability
                             if (results.isEmpty()) {
-                                if (ActionBar.getCooldown("Invoke Death") == 0) {
-                                    ActionBar.useAbility("Invoke Death");
-                                    println("Used 'Invoke Death'");
-                                    Execution.delay(600);
-                                }
-                            }
-                        }
+                                ActionBar.useAbility("Invoke Death");
+                                println("Used 'Invoke Death'");
+                                Execution.delay(RandomGenerator.nextInt(300, 600));
 
-                        // Additional logic for wearing "Luck of the Dwarves" under certain conditions
-                        if (useLuckoftheDwarves && phaseComponent != null && "Phase: 4".equals(phaseComponent.getText())) {
-                            ResultSet<Item> luckResults = InventoryItemQuery.newQuery().name("Luck of the Dwarves").results();
-                            if (!luckResults.isEmpty()) {
-                                Item luckOfTheDwarves = luckResults.first();
-                                if (luckOfTheDwarves != null && luckOfTheDwarves.getStackSize() > 0) {
-                                    boolean success = ActionBar.useItem("Luck of the Dwarves", "Wear");
-                                    if (success) {
-                                        println("Wearing 'Luck of the Dwarves'");
+                                if (npc.getCurrentHealth() < 60000 && "Phase: 4".equals(phaseComponent.getText())) {
+                                    ResultSet<Item> luckResults = InventoryItemQuery.newQuery().name("Luck of the Dwarves").results();
+                                    if (!luckResults.isEmpty()) {
+                                        Item luckOfTheDwarves = luckResults.first();
+                                        if (luckOfTheDwarves != null && luckOfTheDwarves.getStackSize() > 0) {
+                                            boolean success = ActionBar.useItem("Luck of the Dwarves", "Wear");
+                                            if (success) {
+                                                println("Wearing 'Luck of the Dwarves'");
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    if (useprayer)
-                        usePrayerOrRestorePots();
-                    Execution.delay(RandomGenerator.nextInt(50, 100));
-                    if (useoverload)
-                        drinkOverloads();
-                    Execution.delay(RandomGenerator.nextInt(50, 100));
-                    if (eatfood)
-                        eatFood();
-                    Execution.delay(RandomGenerator.nextInt(50, 100));
-                    if (useWeaponPoison)
-                        useWeaponPoison();
-                    Execution.delay(RandomGenerator.nextInt(50, 100));
-
-
-
-
-                    if (getLocalPlayer().getTarget() != null && useVulnBomb) {
+                    if (Client.getLocalPlayer().getTarget() != null) {
                         int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
-                        if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000 && Backpack.contains("Vulnerability bomb")) {
+                        if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000) {
                             boolean success = ActionBar.useItem("Vulnerability bomb", "Throw");
                             if (success) {
-                                println("Eat this vuln bomb!   " + getLocalPlayer().getTarget().getName());
-                                Execution.delayUntil(RandomGenerator.nextInt(2000, 3000), () -> !getLocalPlayer().inCombat());
-                            }else {
-                                println("Failed to use Vulnerability bomb.");
+                                println("Eat this vuln bomb!   " + Client.getLocalPlayer().getTarget().getName());
+                                Execution.delayUntil(RandomGenerator.nextInt(2000, 3000), () -> !Client.getLocalPlayer().inCombat());
                             }
                         }
                     }
@@ -538,10 +460,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void loot() {
-        if (getLocalPlayer() != null) {
-            if (!getLocalPlayer().inCombat()) {
-                return;
-            }
+        if (getLocalPlayer() != null || !getLocalPlayer().inCombat()) {
             List<String> itemNames = Arrays.asList(
                     "Coins", "Cannonball", "Hydrix bolt tips",
                     "Large plated orikalkum salvage", "Dragonkin bones",
@@ -569,13 +488,15 @@ public class SkeletonScript extends LoopingScript {
                     if (groundItem != null) {
                         groundItem.interact("Take");
                         Execution.delayUntil(5000, () -> getLocalPlayer().isMoving());
-                        if (getLocalPlayer().isMoving() && groundItem.getCoordinate() != null && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
+                        if (getLocalPlayer().isMoving() && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
                             ActionBar.useAbility("Surge");
                             Execution.delay(200); // Wait after surging
                         }
-                        if (groundItem.getCoordinate() != null) {
+
+                        if (Travel.walkTo(groundItem.getCoordinate())) {
                             Execution.delayUntil(5000, () -> Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) <= 10); // Wait for the player to walk to the item
                         }
+
                         if (groundItem.interact("Take")) {
                             println("Taking " + itemName);
                             Execution.delay(RandomGenerator.nextInt(700, 900));
@@ -590,28 +511,21 @@ public class SkeletonScript extends LoopingScript {
                 }
             }
 
-            boolean useRuination = VarManager.getVarbitValue(53280) == 1;
-            boolean useDeflectMagic = VarManager.getVarbitValue(16768) == 1;
-            boolean useProtectMagic = VarManager.getVarbitValue(16745) == 1;
-
-
-            if (useRuination) {
+            if (VarManager.getVarbitValue(53280) == 1) {
                 ActionBar.usePrayer("Ruination");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            if (useDeflectMagic) {
+            if (VarManager.getVarbitValue(16768) == 1) {
                 ActionBar.usePrayer("Deflect Magic");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            if (useProtectMagic) {
-                ActionBar.usePrayer("Protect Magic");
-                Execution.delay(RandomGenerator.nextInt(10, 20));
-            }
-
-            botState = BotState.WARSRETREAT;
         }
+        botState = BotState.WARSRETREAT;
     }
 
+    public void setBotState(BotState botState) {
+        this.botState = botState;
+    }
 
     private boolean scriptureOfWenActive = false;
 
@@ -667,9 +581,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private boolean shouldActivateScriptureOfWen() {
-        if(getLocalPlayer() == null)
-            return false;
-
+        assert getLocalPlayer() != null;
         return getLocalPlayer().inCombat() && (UseScriptureOfWen);
     }
 
@@ -682,9 +594,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void usePrayerOrRestorePots() {
-        Player localPlayer = getLocalPlayer();
+        Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null) {
-            int currentPrayerPoints = LOCAL_PLAYER.getPrayerPoints();
+            int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
             if (currentPrayerPoints < prayerPointsThreshold) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
@@ -712,32 +624,22 @@ public class SkeletonScript extends LoopingScript {
 
 
     public void drinkOverloads() {
-        Player localPlayer = getLocalPlayer();
+        Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
             if (VarManager.getVarbitValue(26037) == 0) {
                 if (localPlayer.getAnimationId() == 18000) {
-                    return; // Already performing an action, possibly drinking.
+                    return;
                 }
 
-                ResultSet<Item> items = InventoryItemQuery.newQuery()
+                ResultSet<Item> overload = InventoryItemQuery.newQuery()
+                        .name("overload", String::contains)
                         .results();
-
-                Item overloadItem = items.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains("overload"))
-                        .findFirst()
-                        .orElse(null);
-
-                if (overloadItem != null) {
+                if (!overload.isEmpty()) {
+                    Item overloadItem = overload.first();
+                    assert overloadItem != null;
+                    Backpack.interact(overloadItem.getName(), "Drink");
                     println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
-                    boolean success = Backpack.interact(overloadItem.getName(), "Drink");
                     Execution.delay(RandomGenerator.nextInt(500, 600));
-
-                    if (!success) {
-                        println("Failed to drink " + overloadItem.getName());
-                    }
-                } else {
-                    println("No overload found!");
                 }
             }
         }
@@ -749,13 +651,10 @@ public class SkeletonScript extends LoopingScript {
                 ResultSet<Item> food = InventoryItemQuery.newQuery(93).option("Eat").results();
                 if (!food.isEmpty()) {
                     Item eat = food.first();
-                    if(eat != null) {
-                        Backpack.interact(eat.getName(), 1);
-                        println("Eating " + eat.getName());
-                        Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
-                    }else {
-                        println("Failed to eat!");
-                    }
+                    assert eat != null;
+                    Backpack.interact(eat.getName(), 1);
+                    println("Eating " + eat.getName());
+                    Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
                 } else {
                     println("No food found!");
                 }
@@ -798,30 +697,21 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void useWeaponPoison() {
-        Player localPlayer = getLocalPlayer();
+        Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
-            // Check if interface 284 does NOT contain a component with sprite ID 30095 to indicate weapon poison is not already applied
+            // Check if interface 284 does NOT contain a component with sprite ID 30095
             if (!hasComponentWithSpriteId(284, 30095)) {
-
-                ResultSet<Item> items = InventoryItemQuery.newQuery()
+                // Query for "Weapon Poison" in the backpack
+                ResultSet<Item> weaponPoisonItems = InventoryItemQuery.newQuery()
+                        .name("Weapon", String::contains) // Adjust the match criteria as needed
                         .results();
-
-                Item weaponPoisonItem = items.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains("weapon poison"))
-                        .findFirst()
-                        .orElse(null);
-
-                if (weaponPoisonItem != null) {
-                    println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
-                    boolean success = Backpack.interact(weaponPoisonItem.getName(), "Apply");
+                if (!weaponPoisonItems.isEmpty()) {
+                    Item weaponPoison = weaponPoisonItems.first();
+                    assert weaponPoison != null;
+                    // Interact with the first "Weapon Poison" found
+                    Backpack.interact(weaponPoison.getName(), "Apply"); // Adjust the action as necessary
+                    println("Using Weapon Poison: " + weaponPoison.getName() + " ID: " + weaponPoison.getId());
                     Execution.delay(RandomGenerator.nextInt(500, 600));
-
-                    if (!success) {
-                        println("Failed to apply " + weaponPoisonItem.getName());
-                    }
-                } else {
-                    println("No weapon poison found!");
                 }
             }
         }
@@ -832,24 +722,5 @@ public class SkeletonScript extends LoopingScript {
                 .spriteId(spriteId)
                 .results();
         return !components.isEmpty();
-    }
-    private void useCauldron() {
-        if (getLocalPlayer() == null) {
-            return;
-        }
-
-        EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(127472).option("Drink from").results();
-
-        if (!results.isEmpty()) {
-            SceneObject cauldron = results.nearest();
-            if (cauldron != null) {
-                cauldron.interact("Drink from");
-                println("Drinking from Cauldron!");
-                Execution.delay(RandomGenerator.nextInt(2000, 3000));
-                botState = BotState.BANKING; // Update this to the appropriate next state
-            } else {
-                println("Failed to interact with the Cauldron.");
-            }
-        }
     }
 }
