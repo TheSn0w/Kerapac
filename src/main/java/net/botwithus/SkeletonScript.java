@@ -382,21 +382,12 @@ public class SkeletonScript extends LoopingScript {
             if (UseScriptureOfWen) {
                 manageScriptureOfWen();
                 Execution.delay(RandomGenerator.nextInt(10, 20));
-                if (useprayer)
-                    usePrayerOrRestorePots();
-                Execution.delay(RandomGenerator.nextInt(20, 30));
-                if (useWeaponPoison)
-                    useWeaponPoison();
-                Execution.delay(RandomGenerator.nextInt(10, 20));
+
 
 
             }
             EntityResultSet<Npc> npcs = NpcQuery.newQuery().name("Kerapac, the bound").results();
-            eatFood();
-            Execution.delay(RandomGenerator.nextInt(20, 30));
-            if (useoverload)
-                drinkOverloads();
-            Execution.delay(RandomGenerator.nextInt(20, 30));
+
 
 
             for (Npc npc : npcs) {
@@ -419,7 +410,7 @@ public class SkeletonScript extends LoopingScript {
                         shouldSurge = true;
                     } else if (animationId == 34194 && shouldSurge && !surged) {
                         println("Hes Flying High.... dodging this shit...");
-                        Execution.delay(600);
+                        Execution.delay(RandomGenerator.nextInt(550, 600));
                         ActionBar.useAbility("Surge");
                         println("Dodged MWAHA!");
                         surged = true;
@@ -441,8 +432,9 @@ public class SkeletonScript extends LoopingScript {
                         if (Travel.walkTo(kerapacLocation)) {
                             while (Distance.between(getLocalPlayer().getCoordinate(), kerapacLocation) > 1) {
 
-                                if (ActionBar.getCooldown("Anticipation1") == 0) {
-                                    ActionBar.useAbility("Anticipation1");
+                                if (ActionBar.getCooldown("Anticipation") == 0) {
+                                    ActionBar.useAbility("Anticipation");
+                                    println("Tried to use 'Anticipation' to avoid Kerapac's stun.");
                                 }
                                 Execution.delay(100);
                             }
@@ -475,37 +467,59 @@ public class SkeletonScript extends LoopingScript {
                         println("Bitch is dead, lol lets see what goodies we got :D ");
                         botState = BotState.LOOTING;
                         return; // Exit if the condition is met and the action is performed
-                    } else if (Interfaces.isOpen(1181)) {
+                    }
+                    if (Interfaces.isOpen(1181)) {
+                        // Query for a specific component related to game phases
                         ComponentQuery phaseQuery = ComponentQuery.newQuery(1181).componentIndex(21);
                         ResultSet<Component> phaseResults = phaseQuery.results();
                         Component phaseComponent = phaseResults.first();
 
+                        // Check for phase 4 and if Invoke Death should be used
                         if (useInvokeDeath && phaseComponent != null && "Phase: 4".equals(phaseComponent.getText())) {
+                            // Query for a specific component by sprite ID
                             ComponentQuery query = ComponentQuery.newQuery(1490).spriteId(30100);
                             ResultSet<Component> results = query.results();
 
+                            // If no results found and cooldown is zero, use the ability
                             if (results.isEmpty()) {
                                 if (ActionBar.getCooldown("Invoke Death") == 0) {
                                     ActionBar.useAbility("Invoke Death");
                                     println("Used 'Invoke Death'");
                                     Execution.delay(600);
                                 }
+                            }
+                        }
 
-                                if (useLuckoftheDwarves && npc.getCurrentHealth() < 60000 && "Phase: 4".equals(phaseComponent.getText())) {
-                                    ResultSet<Item> luckResults = InventoryItemQuery.newQuery().name("Luck of the Dwarves").results();
-                                    if (!luckResults.isEmpty()) {
-                                        Item luckOfTheDwarves = luckResults.first();
-                                        if (luckOfTheDwarves != null && luckOfTheDwarves.getStackSize() > 0) {
-                                            boolean success = ActionBar.useItem("Luck of the Dwarves", "Wear");
-                                            if (success) {
-                                                println("Wearing 'Luck of the Dwarves'");
-                                            }
-                                        }
+                        // Additional logic for wearing "Luck of the Dwarves" under certain conditions
+                        if (useLuckoftheDwarves && phaseComponent != null && "Phase: 4".equals(phaseComponent.getText())) {
+                            ResultSet<Item> luckResults = InventoryItemQuery.newQuery().name("Luck of the Dwarves").results();
+                            if (!luckResults.isEmpty()) {
+                                Item luckOfTheDwarves = luckResults.first();
+                                if (luckOfTheDwarves != null && luckOfTheDwarves.getStackSize() > 0) {
+                                    boolean success = ActionBar.useItem("Luck of the Dwarves", "Wear");
+                                    if (success) {
+                                        println("Wearing 'Luck of the Dwarves'");
                                     }
                                 }
                             }
                         }
                     }
+                    if (useprayer)
+                        usePrayerOrRestorePots();
+                    Execution.delay(RandomGenerator.nextInt(50, 100));
+                    if (useoverload)
+                        drinkOverloads();
+                    Execution.delay(RandomGenerator.nextInt(50, 100));
+                    if (eatfood)
+                        eatFood();
+                    Execution.delay(RandomGenerator.nextInt(50, 100));
+                    if (useWeaponPoison)
+                        useWeaponPoison();
+                    Execution.delay(RandomGenerator.nextInt(50, 100));
+
+
+
+
                     if (getLocalPlayer().getTarget() != null && useVulnBomb) {
                         int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
                         if (vulnDebuffVarbit == 0 && npc.getCurrentHealth() > 100000 && Backpack.contains("Vulnerability bomb")) {
