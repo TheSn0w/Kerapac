@@ -196,7 +196,7 @@ public class SkeletonScript extends LoopingScript {
                     Execution.delayUntil(5000, () ->
                         getLocalPlayer().getPrayerPoints() >= 9000
                     );
-                    botState = BotState.BANKING;
+                    botState = BotState.CAULDRON;
                 }else {
                     println("Failed to interact with Altar of War.");
                 }
