@@ -106,6 +106,7 @@ public class SkeletonScript extends LoopingScript {
                 hasInteractedWithLootAll = false;
                 hasInteractedWithStart = false;
                 hasUsedInvokeDeath = false;
+                Execution.delay(RandomGenerator.nextInt(3000, 4000));
                 int warsRetreatRegionId = ((3294 >> 6) << 8) + (10127 >> 6);
                 Coordinate playerCoord = Client.getLocalPlayer().getCoordinate();
                 int currentPlayerRegionId = ((playerCoord.getX() >> 6) << 8) + (playerCoord.getY() >> 6);
@@ -115,7 +116,7 @@ public class SkeletonScript extends LoopingScript {
                 }
                 println("We're idle!");
                 destroyKeyIfDetected();
-                Execution.delay(RandomGenerator.nextInt(1000, 3000));
+                Execution.delay(RandomGenerator.nextInt(1000, 2000));
                 botState = BotState.PRAYER;
             }
             case PRAYER -> {
@@ -564,7 +565,7 @@ public class SkeletonScript extends LoopingScript {
                             println("Used 'Anticipation' to avoid Kerapac's stun.");
                             hasUsedAnticipation = true;
                         }
-                        Execution.delayUntil(2500, () -> kerapac.getAnimationId() != 34198);
+                        Execution.delayUntil(5000, () -> kerapac.getAnimationId() != 34198);
 
 
                         if (kerapac.validate()) {
