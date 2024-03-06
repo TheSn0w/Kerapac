@@ -523,7 +523,7 @@ public class SkeletonScript extends LoopingScript {
             case 34194:
                 if (shouldSurge && !surged) {
                     println("He's Flying High.... dodging this.");
-                    Execution.delay(500);
+                    Execution.delay(450);
                     ActionBar.useAbility("Surge");
                     println("Dodged MWAHA!");
                     surged = true;
