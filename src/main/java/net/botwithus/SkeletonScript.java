@@ -640,8 +640,9 @@ public class SkeletonScript extends LoopingScript {
 
                 botState = BotState.WARSRETREAT;
             }
-            if (getLocalPlayer().getAnimationId() == -1) {
-                if (System.currentTimeMillis() - lastAnimationTime > 30000) { // 30 seconds
+            if (getLocalPlayer().getAnimationId() == -1 && !getLocalPlayer().isMoving()) {
+                if (System.currentTimeMillis() - lastAnimationTime > 10000) {
+                    print("No animation detected for 10 seconds, Teleporting to Wars.");
                     botState = BotState.WARSRETREAT;
                 }
             }
