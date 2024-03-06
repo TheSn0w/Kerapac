@@ -136,6 +136,7 @@ public class SkeletonScript extends LoopingScript {
             case LOOTING -> {
                 deactivateScriptureOfWen();
                 loot();
+                DeativatePrayers();
             }
             case WARSRETREAT -> {
                 ++loopCounter;
@@ -622,42 +623,43 @@ public class SkeletonScript extends LoopingScript {
                         }
                         if (groundItem.interact("Take")) {
                             println("Taking " + itemName);
-                            Execution.delay(RandomGenerator.nextInt(700, 900));
+                            Execution.delay(RandomGenerator.nextInt(600, 700));
                         }
 
                         Execution.delayUntil(15000, () -> Interfaces.isOpen(1622));
-                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
+                        Execution.delay(RandomGenerator.nextInt(800, 1000));
                         LootAll();
                         break;
                     }
-                    Execution.delay(RandomGenerator.nextInt(400, 600));
+                    Execution.delay(RandomGenerator.nextInt(200, 300));
                 }
-            }
-
-            boolean useRuination1 = VarManager.getVarbitValue(53280) == 1;
-            boolean useDeflectMagic1 = VarManager.getVarbitValue(16768) == 1;
-            boolean useProtectMagic1 = VarManager.getVarbitValue(16745) == 1;
-            boolean useSorrow1 = VarManager.getVarbitValue(53279) == 1;
-
-
-            if (useRuination1 && (useRuination)) {
-                ActionBar.usePrayer("Ruination");
-                Execution.delay(RandomGenerator.nextInt(10, 20));
-            }
-            if (useDeflectMagic1 && useDeflectMagic) {
-                ActionBar.usePrayer("Deflect Magic");
-                Execution.delay(RandomGenerator.nextInt(10, 20));
-            }
-            if (useProtectMagic1 && useProtectMagic) {
-                ActionBar.usePrayer("Protect Magic");
-                Execution.delay(RandomGenerator.nextInt(10, 20));
-            }
-            if (useSorrow1 && useSorrow) {
-                ActionBar.usePrayer("Sorrow");
-                Execution.delay(RandomGenerator.nextInt(10, 20));
 
                 botState = BotState.WARSRETREAT;
             }
+        }
+    }
+    private void DeativatePrayers() {
+        boolean useRuination1 = VarManager.getVarbitValue(53280) == 1;
+        boolean useDeflectMagic1 = VarManager.getVarbitValue(16768) == 1;
+        boolean useProtectMagic1 = VarManager.getVarbitValue(16745) == 1;
+        boolean useSorrow1 = VarManager.getVarbitValue(53279) == 1;
+
+
+        if (useRuination1 && (useRuination)) {
+            ActionBar.usePrayer("Ruination");
+            Execution.delay(RandomGenerator.nextInt(10, 15));
+        }
+        if (useDeflectMagic1 && useDeflectMagic) {
+            ActionBar.usePrayer("Deflect Magic");
+            Execution.delay(RandomGenerator.nextInt(10, 15));
+        }
+        if (useProtectMagic1 && useProtectMagic) {
+            ActionBar.usePrayer("Protect Magic");
+            Execution.delay(RandomGenerator.nextInt(10, 15));
+        }
+        if (useSorrow1 && useSorrow) {
+            ActionBar.usePrayer("Sorrow");
+            Execution.delay(RandomGenerator.nextInt(10, 15));
         }
     }
 
