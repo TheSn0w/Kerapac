@@ -524,7 +524,7 @@ public class SkeletonScript extends LoopingScript {
             case 34194:
                 if (shouldSurge && !surged) {
                     println("He's Flying High.... dodging this.");
-                    Execution.delay(RandomGenerator.nextInt(370, 390));
+                    Execution.delay(RandomGenerator.nextInt(350, 400));
                     ActionBar.useAbility("Surge");
                     println("Dodged MWAHA!");
                     surged = true;
