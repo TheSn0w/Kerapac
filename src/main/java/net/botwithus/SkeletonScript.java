@@ -655,8 +655,9 @@ public class SkeletonScript extends LoopingScript {
                 ActionBar.usePrayer("Sorrow");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            botState = BotState.WARSRETREAT;
         }
+            botState = BotState.WARSRETREAT;
+
     }
 
 
