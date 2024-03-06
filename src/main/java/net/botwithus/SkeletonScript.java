@@ -23,11 +23,12 @@ import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.scene.entities.object.SceneObject;
 import net.botwithus.rs3.game.vars.VarManager;
-import net.botwithus.rs3.imgui.NativeInteger;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
+import net.botwithus.rs3.events.EventBus;
+import net.botwithus.rs3.events.impl.ServerTickedEvent;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -84,6 +85,8 @@ public class SkeletonScript extends LoopingScript {
     public SkeletonScript(String s, ScriptConfig scriptConfig, ScriptDefinition scriptDefinition) {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
+
+        EventBus.EVENT_BUS.subscribe(this, ServerTickedEvent.class, this::onServerTicked);
     }
 
     private boolean kerapacPortalInitialized = false;
@@ -637,8 +640,14 @@ public class SkeletonScript extends LoopingScript {
 
                 botState = BotState.WARSRETREAT;
             }
+            if (getLocalPlayer().getAnimationId() == -1) {
+                if (System.currentTimeMillis() - lastAnimationTime > 30000) { // 30 seconds
+                    botState = BotState.WARSRETREAT;
+                }
+            }
         }
     }
+    private long lastAnimationTime = System.currentTimeMillis();
     private void DeativatePrayers() {
         boolean useRuination1 = VarManager.getVarbitValue(53280) == 1;
         boolean useDeflectMagic1 = VarManager.getVarbitValue(16768) == 1;
@@ -1045,6 +1054,10 @@ public class SkeletonScript extends LoopingScript {
         } else {
             println("No TH key found to destroy.");
         }
+    }
+    private void onServerTicked(ServerTickedEvent event) {
+        // Your logic here, e.g., logging the tick count
+        System.out.println("Server ticked, tick count: " + event.getTicks());
     }
 }
 
