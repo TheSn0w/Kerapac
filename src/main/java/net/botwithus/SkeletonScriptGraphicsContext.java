@@ -18,6 +18,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private String prayerFeedbackMessage = "";
     private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
+    private String LoopThresholdStr = "1";
+    private String LoopFeedbackMessage = "";
+    String loopCounterStr = "";
     private int loopCounter = 0;
 
     private static float RGBToFloat(int rgbValue) {
@@ -72,17 +75,34 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 }
                 displayLoopCount();
                 ImGui.SeparatorText("Combat Options");
-                script.startAtPortal = ImGui.Checkbox("Start at Portal", script.startAtPortal);
+                script.startAtPortal = ImGui.Checkbox("Start outside Kerapac Entrance", script.startAtPortal);
                 script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
                 script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                 script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
                 script.useoverload = ImGui.Checkbox("Use Overload", script.useoverload);
                 script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
-                script.useProtectMagic = ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic);
-                script.useDeflectMagic = ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic);
-                script.useRuination = ImGui.Checkbox("Use Ruination", script.useRuination);
+                if (ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic)) {
+                    script.useProtectMagic = true;
+                    script.useDeflectMagic = false;
+                }
+                ImGui.SameLine();
+                if (ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic)) {
+                    script.useDeflectMagic = true;
+                    script.useProtectMagic = false;
+                }
+
+                if (ImGui.Checkbox("Use Ruination", script.useRuination)) {
+                    script.useRuination = true;
+                    script.useSorrow = false;
+                }
+                ImGui.SameLine();
+                if (ImGui.Checkbox("Use Sorrow", script.useSorrow)) {
+                    script.useSorrow = true;
+                    script.useRuination = false;
+                }
                 script.useVulnBomb = ImGui.Checkbox("Use Vulnerability bomb", script.useVulnBomb);
                 script.useInvokeDeath = ImGui.Checkbox("Use Invoke Death", script.useInvokeDeath);
+                script.useDarkness = ImGui.Checkbox("Use Darkness", script.useDarkness);
                 script.useLuckoftheDwarves = ImGui.Checkbox("Use Luck of the Dwarves Switch", script.useLuckoftheDwarves);
                 ImGui.SeparatorText("Food/Prayer Options");
                 script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
@@ -132,11 +152,10 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                 if (!prayerFeedbackMessage.isEmpty()) {
                     ImGui.Text(prayerFeedbackMessage);
-                    ImGui.EndTabBar();
-                    ImGui.End();
                 }
-
             }
+            ImGui.EndTabBar();
+            ImGui.End();
         }
         ImGui.PopStyleVar(100);
         ImGui.PopStyleColor(100);
