@@ -105,7 +105,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                 }
                 ImGui.SameLine();
-                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
+                ImGui.Text("PRESS BUTTON TO ENABLE");
                 if (!healthFeedbackMessage.isEmpty()) {
                     ImGui.Text(healthFeedbackMessage);
                 }
@@ -128,7 +128,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                 }
                 ImGui.SameLine();
-                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
+                ImGui.Text("PRESS BUTTON TO ENABLE");
 
                 if (!prayerFeedbackMessage.isEmpty()) {
                     ImGui.Text(prayerFeedbackMessage);

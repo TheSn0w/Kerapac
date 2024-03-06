@@ -642,13 +642,13 @@ public class SkeletonScript extends LoopingScript {
                     GroundItem groundItem = groundItems.nearest();
                     if (groundItem != null) {
                         groundItem.interact("Take");
-                        Execution.delayUntil(200, () -> getLocalPlayer().isMoving());
+                        Execution.delayUntil(5000, () -> getLocalPlayer().isMoving());
                         if (getLocalPlayer().isMoving() && groundItem.getCoordinate() != null && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
                             ActionBar.useAbility("Surge");
                             Execution.delay(200); // Wait after surging
                         }
                         if (groundItem.getCoordinate() != null) {
-                            Execution.delayUntil(5000, () -> Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) <= 10); // Wait for the player to walk to the item
+                            Execution.delayUntil(100, () -> Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) <= 10); // Wait for the player to walk to the item
                         }
                         if (groundItem.interact("Take")) {
                             println("Taking " + itemName);
