@@ -408,32 +408,32 @@ public class SkeletonScript extends LoopingScript {
         if (useprayer) {
             usePrayerOrRestorePots();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
         if (eatfood) {
             eatFood();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
         if (useoverload) {
             drinkOverloads();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
 
         if (useWeaponPoison) {
             useWeaponPoison();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
         if (useDarkness) {
             useDarkness();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
         if (useSaraBrew) {
             UseSaraBrew();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
         if (useSaraBrewandBlubber) {
             UseSaraandBlubber();
         }
-        Execution.delay(RandomGenerator.nextInt(50, 100));
+        Execution.delay(RandomGenerator.nextInt(10, 20));
 
 
         weAreDead();
@@ -524,7 +524,7 @@ public class SkeletonScript extends LoopingScript {
             case 34194:
                 if (shouldSurge && !surged) {
                     println("He's Flying High.... dodging this.");
-                    Execution.delay(450);
+                    Execution.delay(RandomGenerator.nextInt(370, 390));
                     ActionBar.useAbility("Surge");
                     println("Dodged MWAHA!");
                     surged = true;
