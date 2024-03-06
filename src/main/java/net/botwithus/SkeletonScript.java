@@ -628,36 +628,37 @@ public class SkeletonScript extends LoopingScript {
                         Execution.delayUntil(15000, () -> Interfaces.isOpen(1622));
                         Execution.delay(RandomGenerator.nextInt(2000, 3000));
                         LootAll();
+                        break;
                     }
                     Execution.delay(RandomGenerator.nextInt(400, 600));
                 }
             }
 
-            boolean useRuination = VarManager.getVarbitValue(53280) == 1;
-            boolean useDeflectMagic = VarManager.getVarbitValue(16768) == 1;
-            boolean useProtectMagic = VarManager.getVarbitValue(16745) == 1;
-            boolean useSorrow = VarManager.getVarbitValue(53279) == 1;
+            boolean useRuination1 = VarManager.getVarbitValue(53280) == 1;
+            boolean useDeflectMagic1 = VarManager.getVarbitValue(16768) == 1;
+            boolean useProtectMagic1 = VarManager.getVarbitValue(16745) == 1;
+            boolean useSorrow1 = VarManager.getVarbitValue(53279) == 1;
 
 
-            if (useRuination) {
+            if (useRuination1 && (useRuination)) {
                 ActionBar.usePrayer("Ruination");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            if (useDeflectMagic) {
+            if (useDeflectMagic1 && useDeflectMagic) {
                 ActionBar.usePrayer("Deflect Magic");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            if (useProtectMagic) {
+            if (useProtectMagic1 && useProtectMagic) {
                 ActionBar.usePrayer("Protect Magic");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
             }
-            if (useSorrow) {
+            if (useSorrow1 && useSorrow) {
                 ActionBar.usePrayer("Sorrow");
                 Execution.delay(RandomGenerator.nextInt(10, 20));
+
+                botState = BotState.WARSRETREAT;
             }
         }
-            botState = BotState.WARSRETREAT;
-
     }
 
 
