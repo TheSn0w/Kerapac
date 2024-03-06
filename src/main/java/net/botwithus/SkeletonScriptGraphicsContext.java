@@ -6,14 +6,19 @@ import net.botwithus.rs3.imgui.ImGuiWindowFlag;
 import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
+    private Instant startTime;
+    private long scriptStartTime;
     private String healthFeedbackMessage = "";
     private String prayerFeedbackMessage = "";
-    private String prayerPointsThresholdStr = "1000";
+    private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
+    private int loopCounter = 0;
 
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
@@ -22,6 +27,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     public SkeletonScriptGraphicsContext(ScriptConsole scriptConsole, SkeletonScript script) {
         super(scriptConsole);
         this.script = script;
+        this.startTime = Instant.now();
     }
 
 
@@ -64,10 +70,20 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 if (ImGui.Button("Restart & Teleport to War's Retreat (DEBUG)")) {
                     script.restartScript();
                 }
+                displayLoopCount();
+                ImGui.SeparatorText("Combat Options");
                 script.startAtPortal = ImGui.Checkbox("Start at Portal", script.startAtPortal);
+                script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
+                script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                 script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
                 script.useoverload = ImGui.Checkbox("Use Overload", script.useoverload);
                 script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
+                script.useProtectMagic = ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic);
+                script.useDeflectMagic = ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic);
+                script.useRuination = ImGui.Checkbox("Use Ruination", script.useRuination);
+                script.useVulnBomb = ImGui.Checkbox("Use Vulnerability bomb", script.useVulnBomb);
+                script.useInvokeDeath = ImGui.Checkbox("Use Invoke Death", script.useInvokeDeath);
+                script.useLuckoftheDwarves = ImGui.Checkbox("Use Luck of the Dwarves Switch", script.useLuckoftheDwarves);
                 ImGui.SeparatorText("Food/Prayer Options");
                 script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
                 script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
@@ -88,6 +104,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         healthFeedbackMessage = "Invalid number format for Health Threshold.";
                     }
                 }
+                ImGui.SameLine();
+                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
                 if (!healthFeedbackMessage.isEmpty()) {
                     ImGui.Text(healthFeedbackMessage);
                 }
@@ -109,15 +127,35 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         prayerFeedbackMessage = "Invalid number format.";
                     }
                 }
+                ImGui.SameLine();
+                ImGui.Text("PRESS BUTTON BEFORE STARTING SCRIPT");
 
                 if (!prayerFeedbackMessage.isEmpty()) {
                     ImGui.Text(prayerFeedbackMessage);
                     ImGui.EndTabBar();
                     ImGui.End();
                 }
+
             }
         }
         ImGui.PopStyleVar(100);
         ImGui.PopStyleColor(100);
+    }
+    private void displayLoopCount(){
+        int loopCount = script.getLoopCounter();
+        ImGui.Text("Number of Kills: " + loopCount);
+
+        // Calculate the elapsed time
+        Duration elapsedTime = Duration.between(startTime, Instant.now());
+
+        // Calculate and display Runs Per Hour
+        float runsPerHour = calculatePerHour(elapsedTime, loopCount);
+        ImGui.Text(String.format("Kills Per Hour: %.2f", runsPerHour));
+
+    }
+    private float calculatePerHour(Duration elapsed, int quantity) {
+        long elapsedSeconds = elapsed.getSeconds();
+        if (elapsedSeconds == 0) return 0;
+        return (float) quantity / elapsedSeconds * 3600;
     }
 }
