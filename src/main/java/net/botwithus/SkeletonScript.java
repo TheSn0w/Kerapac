@@ -26,7 +26,6 @@ import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.scene.entities.object.SceneObject;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
-import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.ScriptConsole;
@@ -37,9 +36,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
@@ -50,7 +46,6 @@ public class SkeletonScript extends LoopingScript {
     private BotState botState = BotState.IDLE;
     public boolean runScript;
     boolean UseScriptureOfWen;
-    private final Queue<Runnable> abilityRotation = new LinkedList<>();
     private int prayerPointsThreshold = 5000;
     boolean useprayer;
     boolean useoverload;
@@ -74,7 +69,6 @@ public class SkeletonScript extends LoopingScript {
     private boolean hasUsedInvokeDeath = false;
     private boolean luckOfTheDwarvesUsed = false;
     private long lastVulnBombAttemptTime = 0;
-    private int tickCounter = 0;
 
     public int getLoopCounter() {
         return loopCounter;
@@ -156,6 +150,7 @@ public class SkeletonScript extends LoopingScript {
             case WARSRETREAT -> {
                 ++loopCounter;
                 useWarsRetreat();
+                saveConfiguration();
             }
             case RESTART_SCRIPT -> {
                 restartScript();
@@ -936,35 +931,15 @@ public class SkeletonScript extends LoopingScript {
         }
     }
     private void onServerTick(ServerTickedEvent event) {
-        if (getLocalPlayer().getTarget().getAnimationId() == 34186) {
-            println("Target animation detected, moving on to the next state.");
-            botState = BotState.LOOTING;
-            // Skipping initializeAbilityRotation and stopping further execution for this tick
-            return;
-        }
-
-       /* if (firstAnimationEncountered && botState != BotState.LOOTING) {
-            initializeAbilityRotation();
-        }*/
-
-        tickCounter++;
-
         if (hasEatenFood) {
             ticksAfterEating += 1;
             if (ticksAfterEating >= 4) {
+
                 hasEatenFood = false;
                 ticksAfterEating = 0;
             }
         }
-
-        if (tickCounter >= 3 && !abilityRotation.isEmpty() && botState != BotState.LOOTING) {
-            Runnable ability = abilityRotation.poll();
-            ability.run();
-            abilityRotation.add(ability); // Re-add for continuous rotation
-            tickCounter = 0;
-        }
     }
-
 
     private boolean hasInteractedWithLootAll = false;
 
@@ -1205,7 +1180,7 @@ public class SkeletonScript extends LoopingScript {
         this.maxDelay = maxDelay;
     }
 
-    void saveConfiguration() { //CIPHER PLEASE HELP ME WITH GETTING THE ADJUSTABLE SETTINGS TO SAVE, I DMED YOU BUT NO REPLY
+    private void saveConfiguration() { //CIPHER PLEASE HELP ME WITH GETTING THE ADJUSTABLE SETTINGS TO SAVE, I DMED YOU BUT NO REPLY
         // Saving boolean settings
         this.configuration.addProperty("UseScriptureOfWen", String.valueOf(this.UseScriptureOfWen));
         this.configuration.addProperty("usePrayer", String.valueOf(this.useprayer));
@@ -1225,13 +1200,8 @@ public class SkeletonScript extends LoopingScript {
         this.configuration.addProperty("useWeaponPoison", String.valueOf(this.useWeaponPoison));
         this.configuration.addProperty("useDarkness", String.valueOf(this.useDarkness));
         this.configuration.addProperty("startAtPortal", String.valueOf(this.startAtPortal));
-        this.configuration.addProperty("healthThreshold", String.valueOf(this.healthThreshold));
-        this.configuration.addProperty("minDelay", String.valueOf(this.minDelay));
-        this.configuration.addProperty("maxDelay", String.valueOf(this.maxDelay));
-        this.configuration.addProperty("prayerPointsThreshold", String.valueOf(this.prayerPointsThreshold));
-        if (ImGui.IsItemClicked(ImGui.MouseButton.LEFT_BUTTON)) {
-            saveConfiguration();
-        }
+
+        this.configuration.save();
     }
 
 
@@ -1255,10 +1225,7 @@ public class SkeletonScript extends LoopingScript {
             this.useWeaponPoison = Boolean.parseBoolean(this.configuration.getProperty("useWeaponPoison"));
             this.useDarkness = Boolean.parseBoolean(this.configuration.getProperty("useDarkness"));
             this.startAtPortal = Boolean.parseBoolean(this.configuration.getProperty("startAtPortal"));
-            this.setHealthThreshold(Integer.parseInt(this.configuration.getProperty("healthThreshold")));
-            this.minDelay = Integer.parseInt(this.configuration.getProperty("minDelay"));
-            this.maxDelay = Integer.parseInt(this.configuration.getProperty("maxDelay"));
-            this.prayerPointsThreshold = Integer.parseInt(this.configuration.getProperty("prayerPointsThreshold"));
+            this.healthThreshold = Integer.parseInt(this.configuration.getProperty("healthThreshold"));
 
 
             println("Configuration loaded successfully.");
@@ -1286,125 +1253,4 @@ public class SkeletonScript extends LoopingScript {
             e.printStackTrace();
         }
     }
-   /* private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-    private void checkKerapacAttackable() {
-        Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
-        if (kerapac == null) {
-            println("Kerapac not found, stopping checks.");
-            return;
-        }
-
-        if (!kerapac.getOptions().contains("Attack")) {
-            println("Kerapac is not attackable yet, checking again in 1 second...");
-            scheduler.schedule(this::checkKerapacAttackable, 1, TimeUnit.SECONDS);
-        } else {
-            println("Kerapac is now attackable, initializing ability rotation.");
-            initializeAbilityRotation();
-        }
-    }
-
-    private void initializeAbilityRotation() {
-
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Threads of Fate"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Soul Sap"));
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Soul Sap"));
-        //prefight while kerapac is spawning
-        addToRotation(() -> useAbility("Conjure Undead Army"));
-        addToRotation(() -> useAbility("Life Transfer"));
-        addToRotation(() -> useAbility("Command Vengeful Ghost"));
-        addToRotation(() -> useAbility("Invoke Death")); //surge before this
-        addToRotation(() -> useAbility("Split Soul"));
-        addToRotation(() -> useAbility("Command Skeleton Warrior"));
-        //phase 1
-        addToRotation(() -> useAbility("Ingenuity of the Humans" + "Smoke Cloud"));// equip Praesul Wand before this
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Bloat"));
-        addToRotation(() -> useAbility("Death Skulls"));
-        addToRotation(() -> useAbility("Volley of Souls"));
-        addToRotation(() -> useAbility("Death Essence"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Touch of Death")); // walk under kerapac
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Command Skeleton Warrior"));
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Bloat"));
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Death Grasp"));
-        addToRotation(() -> useAbility("Soul Sap"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Soul Sap"));
-        addToRotation(() -> useAbility("Life Transfer"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        //Phase 2 - Need to time warp before rotation starts
-        addToRotation(() -> useAbility("Living Death"));
-        addToRotation(() -> useItem("Adrenaline Renewal (4)", "Drink"));
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Death Skulls"));
-        addToRotation(() -> useAbility("Finger of Death"));
-        addToRotation(() -> useAbility("Bloat"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack")); // walk under kerapac before this
-        addToRotation(() -> useAbility("Death Skulls"));
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Death Grasp")); //
-        addToRotation(() -> useAbility("Touch of Death"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Death Grasp"));
-        addToRotation(() -> useAbility("Basic<nbsp>Attack"));
-        addToRotation(() -> useAbility("Death Grasp"));
-
-
-    }
-
-    private void addToRotation(Runnable ability) {
-        abilityRotation.add(ability);
-    }
-
-
-    private void useAbility(String abilityName) {
-        if (ActionBar.getCooldownPrecise(abilityName) > 0) {
-            return;
-        }
-        ActionBar.useAbility(abilityName);
-        ScriptConsole.println("Used " + abilityName + ": " + ActionBar.useAbility(abilityName), new Object[0]);
-        ActionBar.getCooldownPrecise(abilityName);
-    }
-
-    private void useItem(String itemName, String action) {
-        if (ActionBar.getCooldownPrecise(itemName) > 0) {
-            return;
-        }
-
-        boolean success = performItemAction(itemName, action);
-
-        if (success) {
-            ScriptConsole.println("Performed action " + action + " with " + itemName, new Object[0]);
-        } else {
-            ScriptConsole.println("Failed to perform action " + action + " with " + itemName, new Object[0]);
-        }
-
-    }
-
-    *//**
-     * Conceptual method to perform a specific action with an item from the action bar.
-     * You'll need to adapt or implement this based on available API functionalities.
-     *
-     * @param itemName The name of the item.
-     * @param action   The action to perform with the item.
-     * @return true if the action was successfully performed; false otherwise.
-     *//*
-    private boolean performItemAction(String itemName, String action) {
-        ActionBar.useItem(itemName, action);
-        return false;
-    }*/
-
 }

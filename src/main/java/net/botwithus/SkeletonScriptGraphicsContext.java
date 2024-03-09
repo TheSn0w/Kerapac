@@ -1,7 +1,5 @@
 package net.botwithus;
 
-import net.botwithus.rs3.events.EventBus;
-import net.botwithus.rs3.events.impl.ServerTickedEvent;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.imgui.ImGuiWindowFlag;
@@ -118,10 +116,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
                     ImGui.SameLine();
                     if (ImGui.Button("Set Health Threshold")) {
-                        if (ImGui.IsItemClicked(ImGui.MouseButton.LEFT_BUTTON)) {
-                            script.saveConfiguration();
-
-                        }
                         try {
                             int newHealthThreshold = Integer.parseInt(healthThresholdStr.trim());
                             if (newHealthThreshold >= 0 && newHealthThreshold <= 100) {
@@ -204,7 +198,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.Text("9. Have Double Surge UNLOCKED.");
                     ImGui.Text("10. IF EATING TICK AND CLICK SET THRESHOLD.");
                     ImGui.Text("11. IF PRAYER TICK AND CLICK SET THRESHOLD.");
-                    ImGui.Text("12. IF CHANGING DELAYS, CLICK UPDATE - (this can be done during the fight).");
+                    ImGui.Text("12. IF CHANGING DELAYS, UPDATE - (this can be done during the fight).");
                     ImGui.Text("13. will support all familiars and scrolls.");
                     ImGui.Text("14. if using familiar, have in bank preset, otherwise it will skip it.");
                     ImGui.Text("15. if using scrolls, have in bank preset.");
@@ -212,7 +206,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.Text("17. Have decent revo bar & Damage.");
                     ImGui.Text("18. Have Ability Queing turned ON.");
                     ImGui.Text("19. i would suggest having, backpack, familiar setting and Equipment on show.");
-                    ImGui.Text("20. MUST HAVE AREALOOT ENABLED (ENABLE ALL 4 OPTIONS IN LOOT SYSTEM.");
                     ImGui.SeparatorText("Version 1.0.0");
                     ImGui.Text("- This script is still in development, please report any bugs to the developer.");
                     ImGui.Text("- Change Log: ");
