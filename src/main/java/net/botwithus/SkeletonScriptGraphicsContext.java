@@ -1,5 +1,7 @@
 package net.botwithus;
 
+import net.botwithus.rs3.events.EventBus;
+import net.botwithus.rs3.events.impl.ServerTickedEvent;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.imgui.ImGuiWindowFlag;
@@ -116,6 +118,10 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
                     ImGui.SameLine();
                     if (ImGui.Button("Set Health Threshold")) {
+                        if (ImGui.IsItemClicked(ImGui.MouseButton.LEFT_BUTTON)) {
+                            script.saveConfiguration();
+
+                        }
                         try {
                             int newHealthThreshold = Integer.parseInt(healthThresholdStr.trim());
                             if (newHealthThreshold >= 0 && newHealthThreshold <= 100) {
