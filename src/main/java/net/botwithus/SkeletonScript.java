@@ -1233,24 +1233,4 @@ public class SkeletonScript extends LoopingScript {
             println("Failed to load configuration. Using defaults.");
         }
     }
-    private void logBoss() {
-        if (getLocalPlayer() == null) return;
-
-        Npc boss = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
-        if (boss == null) return;
-
-        println("Boss Animation: " + boss.getAnimationId());
-        printToTextFile("Boss Animation: " + boss.getAnimationId());
-    }
-
-    private void printToTextFile(String s) {
-        File file = new File("C:\\Users\\Public\\Documents\\log.txt");
-        try {
-            FileWriter fileWriter = new FileWriter(file, true);
-            fileWriter.write(s + "\n");
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
