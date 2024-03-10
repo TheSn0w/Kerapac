@@ -3,7 +3,6 @@ package net.botwithus;
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
 import net.botwithus.internal.scripts.ScriptDefinition;
-import net.botwithus.rs3.events.EventBus;
 import net.botwithus.rs3.events.impl.ServerTickedEvent;
 import net.botwithus.rs3.game.*;
 import net.botwithus.rs3.game.actionbar.ActionBar;
@@ -32,16 +31,9 @@ import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
-import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
 
 
 public class SkeletonScript extends LoopingScript {
@@ -49,6 +41,11 @@ public class SkeletonScript extends LoopingScript {
     private BotState botState = BotState.IDLE;
     private final Queue<Runnable> abilityRotation = new LinkedList<>();
     public boolean runScript;
+    boolean useScriptureOfJas;
+    boolean overloadEnabled;
+    boolean LantadymeIncence;
+    boolean KwuarmIncence;
+    boolean TorstolIncence;
     boolean UseScriptureOfWen;
     private int prayerPointsThreshold = 5000;
     boolean useprayer;
@@ -119,16 +116,21 @@ public class SkeletonScript extends LoopingScript {
             kerapacPortalInitialized = true;
         }
         weAreDead();
+        saveConfiguration();
         switch (botState) {
             case IDLE -> {
-                saveConfiguration();
                 hasInteractedWithLootAll = false;
                 hasInteractedWithStart = false;
                 hasUsedInvokeDeath = false;
                 luckOfTheDwarvesUsed = false;
                 IdleDelays();
                 DeactivatePrayers(); //just in case they're on
-                deactivateScriptureOfWen();
+                if (UseScriptureOfWen) {
+                    deactivateScriptureOfWen();
+                }
+                if (useScriptureOfJas) {
+                    deactivateScriptureOfJas();
+                }
                 botState = BotState.PRAYER;
             }
             case PRAYER ->
@@ -261,7 +263,7 @@ public class SkeletonScript extends LoopingScript {
                     println("Timed out waiting for player health to be full.");
                 }
 
-                manageFamiliarSummoning();
+                handleIncense();
             }
         }
     }
@@ -290,6 +292,21 @@ public class SkeletonScript extends LoopingScript {
                 handleAndInteractWithCrystal();
             }
         }
+    }
+    private void handleIncense(){
+        if (LantadymeIncence) {
+            lantadymeIncenseSticks();
+            Execution.delay(RandomGenerator.nextInt(1000, 1500));
+        }
+        if (KwuarmIncence) {
+            kwuarmIncenseSticks();
+            Execution.delay(RandomGenerator.nextInt(1000, 1500));
+        }
+        if (TorstolIncence) {
+            torstolIncenseSticks();
+            Execution.delay(RandomGenerator.nextInt(1000, 1500));
+        }
+        manageFamiliarSummoning();
     }
 
     private void handleInventoryScrolls() {
@@ -499,6 +516,9 @@ public class SkeletonScript extends LoopingScript {
         if (UseScriptureOfWen) {
             activateScriptureOfWen();
         }
+        if (useScriptureOfJas) {
+            activateScriptureOfJas();
+        }
         if (useoverload) {
             drinkOverloads();
         }
@@ -537,19 +557,27 @@ public class SkeletonScript extends LoopingScript {
         Coordinate currentPlayerCoord = Client.getLocalPlayer().getCoordinate();
 
         if (firstSurgeSuccessful && secondSurgeSuccessful && currentPlayerCoord.equals(expectedSecondSurgeCoord)) {
-            ScriptConsole.println("Used Conjure Undead Army: " + ActionBar.useAbility("Conjure Undead Army"));
+            conjure();
             Execution.delay(RandomGenerator.nextInt(100, 200));
         } else if (!currentPlayerCoord.equals(expectedSecondSurgeCoord)) {
             Coordinate adjustCoord = kerapacPhase1StartCoord.derive(-20, 0, 0);
             Movement.walkTo(adjustCoord.getX(), adjustCoord.getY(), true);
             Execution.delay(RandomGenerator.nextInt(1000, 1500));
-
-            ScriptConsole.println("Used Conjure Undead Army: " + ActionBar.useAbility("Conjure Undead Army"));
+            conjure();
             Execution.delay(RandomGenerator.nextInt(100, 200));
         }
 
 
         botState = BotState.KERAPACPHASE2;
+    }
+    private void conjure() {
+        if (ActionBar.containsAbility("Conjure Undead Army")) {
+            ScriptConsole.println("Used Conjure Undead Army: " + ActionBar.useAbility("Conjure Undead Army"));
+        } else {
+            ScriptConsole.println("Used Conjure Vengeful Ghost: " + ActionBar.useAbility("Conjure Vengeful Ghost"));
+            Execution.delay(net.botwithus.rs3.util.RandomGenerator.nextInt(1850, 1900));
+            ScriptConsole.println("Used Conjure Skeleton Warrior: " + ActionBar.useAbility("Conjure Skeleton Warrior"));
+        }
     }
 
     private void monitorKerapacAnimations() {
@@ -1013,7 +1041,7 @@ public class SkeletonScript extends LoopingScript {
     public void useWeaponPoison() {
         Player localPlayer = getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
-            if (!hasComponentWithSpriteId(284, 30095)) {
+            if (!hasComponentWithSpriteId()) {
 
                 ResultSet<Item> items = InventoryItemQuery.newQuery()
                         .results();
@@ -1038,10 +1066,93 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+    private void kwuarmIncenseSticks() {
+        ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                .name("Kwuarm incense sticks")
+                .results();
+        println("Backpack contains Kwuarm incense sticks: " + !backpackResults.isEmpty());
 
-    private boolean hasComponentWithSpriteId(int interfaceId, int spriteId) {
-        ResultSet<Component> components = ComponentQuery.newQuery(interfaceId)
-                .spriteId(spriteId)
+        if (!backpackResults.isEmpty()) {
+            ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                    .spriteId(47709)
+                    .results();
+            println("Buff needs to be activated: " + componentResults.isEmpty());
+
+            if (componentResults.isEmpty()) {
+                Item kwuarm = backpackResults.first();
+                if (kwuarm != null) {
+                    String option = overloadEnabled ? "Overload" : "Light";
+                    if (Backpack.interact(kwuarm.getName(), option)) {
+                        println("Interaction successful with Kwuarm incense sticks using option: " + option);
+                    } else {
+                        println("Failed to interact with Kwuarm incense sticks using option: " + option);
+                    }
+                }
+            }
+        } else {
+            println("No Kwuarm incense sticks found or buff is already active.");
+        }
+    }
+
+    private void lantadymeIncenseSticks() {
+        ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                .name("Lantadyme incense sticks")
+                .results();
+        println("Backpack contains Lantadyme incense sticks: " + !backpackResults.isEmpty());
+
+        if (!backpackResults.isEmpty()) {
+            ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                    .spriteId(47713)
+                    .results();
+            println("Buff needs to be activated: " + componentResults.isEmpty());
+
+            if (componentResults.isEmpty()) {
+                Item lantadyme = backpackResults.first();
+                if (lantadyme != null) {
+                    String option = overloadEnabled ? "Overload" : "Light";
+                    if (Backpack.interact(lantadyme.getName(), option)) {
+                        println("Interaction successful with Lantadyme incense sticks using option: " + option);
+                    } else {
+                        println("Failed to interact with Lantadyme incense sticks using option: " + option);
+                    }
+                }
+            }
+        } else {
+            println("No Lantadyme incense sticks found or buff is already active.");
+        }
+    }
+
+    private void torstolIncenseSticks() {
+        ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                .name("Torstol incense sticks")
+                .results();
+        println("Backpack contains Torstol incense sticks: " + !backpackResults.isEmpty());
+
+        if (!backpackResults.isEmpty()) {
+            ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                    .spriteId(47715)
+                    .results();
+            println("Buff needs to be activated: " + componentResults.isEmpty());
+
+            if (componentResults.isEmpty()) {
+                Item torstol = backpackResults.first();
+                if (torstol != null) {
+                    String option = overloadEnabled ? "Overload" : "Light";
+                    if (Backpack.interact(torstol.getName(), option)) {
+                        println("Interaction successful with Torstol incense sticks using option: " + option);
+                    } else {
+                        println("Failed to interact with Torstol incense sticks using option: " + option);
+                    }
+                }
+            }
+        } else {
+            println("No Torstol incense sticks found or buff is already active.");
+        }
+    }
+
+    private boolean hasComponentWithSpriteId() {
+        ResultSet<Component> components = ComponentQuery.newQuery(284)
+                .spriteId(30095)
                 .results();
         return !components.isEmpty();
     }
@@ -1195,6 +1306,31 @@ public class SkeletonScript extends LoopingScript {
             println("No TH key found to destroy.");
         }
     }
+    private boolean isScriptureOfJasActive() {
+        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(51814);
+        ResultSet<Component> results = query.results();
+        return !results.isEmpty();
+    }
+
+    private void activateScriptureOfJas() {
+        if (!isScriptureOfJasActive()) {
+            println("Activating Scripture of Jas.");
+            Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate");
+            println("Scripture of Jas activated successfully.");
+            Execution.delay(RandomGenerator.nextInt(500, 600));
+        }
+    }
+
+
+    private void deactivateScriptureOfJas() {
+        if (isScriptureOfJasActive()) {
+            println("Deactivating Scripture of Jas.");
+            Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate");
+            println("Scripture of Jas deactivated.");
+            Execution.delay(RandomGenerator.nextInt(500, 600));
+        }
+    }
+
 
     private int minDelay = 320;
     private int maxDelay = 360;

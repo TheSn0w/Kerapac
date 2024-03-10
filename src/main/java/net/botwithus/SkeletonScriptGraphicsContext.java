@@ -79,27 +79,16 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
                     script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                     script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
+                    ImGui.SameLine();
+                    script.useScriptureOfJas = ImGui.Checkbox("Use Scripture of Jas", script.useScriptureOfJas);
                     script.useoverload = ImGui.Checkbox("Use Overload", script.useoverload);
                     script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
-                    if (ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic)) {
-                        script.useProtectMagic = true;
-                        script.useDeflectMagic = false;
-                    }
+                    script.useProtectMagic = ImGui.Checkbox("Use Protect from Magic", script.useProtectMagic);
                     ImGui.SameLine();
-                    if (ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic)) {
-                        script.useDeflectMagic = true;
-                        script.useProtectMagic = false;
-                    }
-
-                    if (ImGui.Checkbox("Use Ruination", script.useRuination)) {
-                        script.useRuination = true;
-                        script.useSorrow = false;
-                    }
+                    script.useDeflectMagic = ImGui.Checkbox("Use Deflect Magic", script.useDeflectMagic);
+                    script.useRuination = ImGui.Checkbox("Use Ruination", script.useRuination);
                     ImGui.SameLine();
-                    if (ImGui.Checkbox("Use Sorrow", script.useSorrow)) {
-                        script.useSorrow = true;
-                        script.useRuination = false;
-                    }
+                    script.useSorrow = ImGui.Checkbox("Use Sorrow", script.useSorrow);
                     script.useVulnBomb = ImGui.Checkbox("Use Vulnerability bomb", script.useVulnBomb);
                     script.useInvokeDeath = ImGui.Checkbox("Use Invoke Death", script.useInvokeDeath);
                     script.useDarkness = ImGui.Checkbox("Use Darkness", script.useDarkness);
@@ -181,6 +170,24 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     if (!delayUpdateFeedback.isEmpty()) {
                         ImGui.Text(delayUpdateFeedback); // Display the feedback message
+                    }
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Extras", ImGuiWindowFlag.None.getValue())) {
+                    script.KwuarmIncence = ImGui.Checkbox("Use Kwuarm Incense Sticks", script.KwuarmIncence);
+                    if (script.KwuarmIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+                    script.TorstolIncence = ImGui.Checkbox("Use Torstol Incense Sticks", script.TorstolIncence);
+                    if (script.TorstolIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+                    script.LantadymeIncence = ImGui.Checkbox("Use Lantadyme Incense Sticks", script.LantadymeIncence);
+                    if (script.LantadymeIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
                     }
                     ImGui.EndTabItem();
                 }
