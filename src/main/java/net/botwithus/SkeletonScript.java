@@ -1293,11 +1293,11 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void destroyKeyIfDetected() { // did chatgpt convert this correct Cipher? also i dont have comp.interact come up on my thing
-        Random rand = new Random();
         Component thKey = ComponentQuery.newQuery(1473).itemName("Key token").results().first();
         if (thKey != null) {
-            Execution.delay(rand.nextInt(80) + 50);
+            Execution.delay(RandomGenerator.nextInt(1500, 2000));
             if (Interfaces.isOpen(1183)) {
+                Execution.delay(RandomGenerator.nextInt(1500, 2000));
                 println("Destroy key confirmed: " + MiniMenu.interact(ComponentAction.DIALOGUE.getType(), 0, -1, 77529093));
             } else {
                 println("Destroy key from inventory: " + thKey.interact("Destroy"));
