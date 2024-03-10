@@ -253,6 +253,14 @@ public class SkeletonScript extends LoopingScript {
                 bank.interact("Load Last Preset from");
                 println("Loading preset!");
                 Execution.delay(RandomGenerator.nextInt(2500, 3000));
+
+                boolean healthFull = Execution.delayUntil(15000, () -> getLocalPlayer().getCurrentHealth() == getLocalPlayer().getMaximumHealth());
+                if (healthFull) {
+                    println("Player health is now full.");
+                } else {
+                    println("Timed out waiting for player health to be full.");
+                }
+
                 manageFamiliarSummoning();
             }
         }
@@ -969,6 +977,8 @@ public class SkeletonScript extends LoopingScript {
 
     private void LootAll() {
         if (!hasInteractedWithLootAll) {
+            Execution.delay(RandomGenerator.nextInt(1500, 2000));
+
             ComponentQuery query = ComponentQuery.newQuery(1622);
             List<Component> components = query.componentIndex(22)
                     .results()
@@ -993,6 +1003,7 @@ public class SkeletonScript extends LoopingScript {
                     .toList();
 
             if (!components.isEmpty() && components.get(0).interact(1)) {
+                Execution.delay(RandomGenerator.nextInt(800, 1000));
                 hasInteractedWithStart = true;
                 println("Successfully interacted with Start component.");
             }
