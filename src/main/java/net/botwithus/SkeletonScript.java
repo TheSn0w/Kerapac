@@ -32,6 +32,8 @@ import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 
@@ -1046,9 +1048,14 @@ public class SkeletonScript extends LoopingScript {
                 ResultSet<Item> items = InventoryItemQuery.newQuery()
                         .results();
 
+                Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
+
                 Item weaponPoisonItem = items.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains("weapon"))
+                        .filter(item -> {
+                            if (item.getName() == null) return false;
+                            Matcher matcher = poisonPattern.matcher(item.getName());
+                            return matcher.find();
+                        })
                         .findFirst()
                         .orElse(null);
 
@@ -1063,6 +1070,8 @@ public class SkeletonScript extends LoopingScript {
                 } else {
                     println("No weapon poison found!");
                 }
+            } else {
+                println("Weapon poison is already active: " + hasComponentWithSpriteId());
             }
         }
     }
