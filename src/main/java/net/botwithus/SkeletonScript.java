@@ -1048,7 +1048,7 @@ public class SkeletonScript extends LoopingScript {
 
                 Item weaponPoisonItem = items.stream()
                         .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains("weapon poison"))
+                                item.getName().toLowerCase().contains("weapon"))
                         .findFirst()
                         .orElse(null);
 
