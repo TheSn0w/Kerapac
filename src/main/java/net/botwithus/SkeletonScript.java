@@ -155,6 +155,7 @@ public class SkeletonScript extends LoopingScript {
                 firstAnimationEncountered = false;
                 DeactivatePrayers();
                 loot();
+                updateAndDisplayCumulativeLootValue();
             }
             case WARSRETREAT -> {
                 ++loopCounter;
@@ -665,6 +666,7 @@ public class SkeletonScript extends LoopingScript {
             println("Npc not found, aborting animation handling.");
             return;
         }
+
         weAreDead();
         switch (animationId) {
             case 34193:
@@ -702,9 +704,10 @@ public class SkeletonScript extends LoopingScript {
                 break;
             case 34195:
                 if (getLocalPlayer() != null) {
-                    Coordinate fiveTilesAway = getLocalPlayer().getCoordinate().derive(+5, 0, 0);
+                    Coordinate fiveTilesAway = getLocalPlayer().getCoordinate().derive(+7, 0, 0);
 
-                    Movement.walkTo(fiveTilesAway.getX(), fiveTilesAway.getY(), true); {
+                    Movement.walkTo(fiveTilesAway.getX(), fiveTilesAway.getY(), true);
+                    {
                         println("`check the delays in the gui if you see this message`");
                         Execution.delayUntil(10000, () -> fiveTilesAway.equals(getLocalPlayer().getCoordinate()));
                         npc.interact("Attack");
@@ -721,7 +724,7 @@ public class SkeletonScript extends LoopingScript {
                         println("Moving towards Kerapac...");
                         Execution.delayUntil(10000, () -> !getLocalPlayer().isMoving());
 
-                         if  (ActionBar.getCooldown("Anticipation") == 0 && !hasUsedAnticipation) {
+                        if (ActionBar.getCooldown("Anticipation") == 0 && !hasUsedAnticipation) {
                             ScriptConsole.println("Used Anticipation: " + ActionBar.useAbility("Anticipation"));
                             hasUsedAnticipation = true;
                         }
@@ -741,7 +744,6 @@ public class SkeletonScript extends LoopingScript {
                 break;
         }
     }
-
     private void loot() {
         if (getLocalPlayer() != null) {
             List<String> itemNames = Arrays.asList(
@@ -802,6 +804,55 @@ public class SkeletonScript extends LoopingScript {
                 }
                 botState = BotState.WARSRETREAT;
             }
+        }
+    }
+    int cumulativeLootValue = 0;
+
+    private void updateAndDisplayCumulativeLootValue() {
+        if (Interfaces.isOpen(1622)) {
+            Component valueScan = ComponentQuery.newQuery(1622).componentIndex(3).results().last();
+            if (valueScan != null) {
+                String detectedString = valueScan.getText(); // Extract number with potential suffix (e.g., "k")
+                String numberWithSuffix = extractNumberWithSuffix(detectedString);
+                if (!"Error".equals(numberWithSuffix)) {
+                    try {
+                        int valueToAdd = parseValueWithSuffix(numberWithSuffix);
+                        cumulativeLootValue += valueToAdd; // Update cumulative total
+                        println("Cumulative Loot Value: " + cumulativeLootValue);
+                    } catch (NumberFormatException e) {
+                        println("Number format error: " + e.getMessage());
+                    }
+                }
+            } else {
+                println("Component not found");
+            }
+        }
+    }
+    public String extractNumberWithSuffix(String source) {
+        String regex = "([\\d,]+)(k)?"; // Capture digits and optional 'k'
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(source);
+
+        if (matcher.find()) {
+            // Return the match, including any suffix
+            return matcher.group();
+        }
+        return "Error";
+    }
+
+    private int parseValueWithSuffix(String numberWithSuffix) {
+        String cleanNumber = numberWithSuffix.replace(",", ""); // Removing commas for parsing
+        try {
+            if (cleanNumber.endsWith("k")) {
+                // Convert 'k' values to thousands
+                return Integer.parseInt(cleanNumber.substring(0, cleanNumber.length() - 1)) * 1000;
+            } else {
+                // Directly parse if no 'k'
+                return Integer.parseInt(cleanNumber);
+            }
+        } catch (NumberFormatException e) {
+            println("Number format error: " + e.getMessage());
+            return -1; // Indicate error in parsing
         }
     }
 
@@ -888,12 +939,12 @@ public class SkeletonScript extends LoopingScript {
             }
 
             if (!potionUsedSinceThreshold) {
+                Pattern pattern = Pattern.compile("prayer|restore", Pattern.CASE_INSENSITIVE);
+
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
                 Item prayerOrRestorePot = items.stream()
-                        .filter(item -> item.getName() != null &&
-                                (item.getName().toLowerCase().contains("prayer") ||
-                                        item.getName().toLowerCase().contains("restore")))
+                        .filter(item -> item.getName() != null && pattern.matcher(item.getName()).find())
                         .findFirst()
                         .orElse(null);
 
@@ -1009,11 +1060,8 @@ public class SkeletonScript extends LoopingScript {
         if (!hasInteractedWithLootAll) {
             Execution.delay(RandomGenerator.nextInt(1500, 2000));
 
-            ComponentQuery query = ComponentQuery.newQuery(1622);
-            List<Component> components = query.componentIndex(22)
-                    .results()
-                    .stream()
-                    .toList();
+            ComponentQuery lootAllQuery = ComponentQuery.newQuery(1622);
+            List<Component> components = lootAllQuery.componentIndex(22).results().stream().toList();
 
             if (!components.isEmpty() && components.get(0).interact(1)) {
                 hasInteractedWithLootAll = true;
@@ -1021,6 +1069,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
 
     private boolean hasInteractedWithStart = false;
 
@@ -1076,6 +1125,7 @@ public class SkeletonScript extends LoopingScript {
         }
     }
     private void kwuarmIncenseSticks() {
+        // Query the inventory for Kwuarm incense sticks without filtering by stack size
         ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
                 .name("Kwuarm incense sticks")
                 .results();
@@ -1090,7 +1140,19 @@ public class SkeletonScript extends LoopingScript {
             if (componentResults.isEmpty()) {
                 Item kwuarm = backpackResults.first();
                 if (kwuarm != null) {
-                    String option = overloadEnabled ? "Overload" : "Light";
+                    String option;
+                    if (overloadEnabled) {
+                        if (kwuarm.getStackSize() > 6) {
+                            option = "Overload";
+                        } else {
+                            // Overload selected but insufficient stack size
+                            println("Overload option selected but only " + kwuarm.getStackSize() + " sticks available. 6 required.");
+                            option = "Light"; // Fallback to "Light" if stack size is not sufficient
+                        }
+                    } else {
+                        option = "Light"; // If overload not enabled, default to "Light"
+                    }
+
                     if (Backpack.interact(kwuarm.getName(), option)) {
                         println("Interaction successful with Kwuarm incense sticks using option: " + option);
                     } else {
@@ -1104,6 +1166,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void lantadymeIncenseSticks() {
+        // Query for Lantadyme incense sticks without filtering by stack size
         ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
                 .name("Lantadyme incense sticks")
                 .results();
@@ -1118,7 +1181,19 @@ public class SkeletonScript extends LoopingScript {
             if (componentResults.isEmpty()) {
                 Item lantadyme = backpackResults.first();
                 if (lantadyme != null) {
-                    String option = overloadEnabled ? "Overload" : "Light";
+                    String option;
+                    if (overloadEnabled) {
+                        if (lantadyme.getStackSize() > 6) {
+                            option = "Overload";
+                        } else {
+                            // Overload selected but insufficient stack size
+                            println("Overload option selected but only " + lantadyme.getStackSize() + " sticks available. 6 required.");
+                            option = "Light"; // Fallback to "Light" if stack size is not sufficient
+                        }
+                    } else {
+                        option = "Light"; // If overload not enabled, default to "Light"
+                    }
+
                     if (Backpack.interact(lantadyme.getName(), option)) {
                         println("Interaction successful with Lantadyme incense sticks using option: " + option);
                     } else {
@@ -1146,7 +1221,17 @@ public class SkeletonScript extends LoopingScript {
             if (componentResults.isEmpty()) {
                 Item torstol = backpackResults.first();
                 if (torstol != null) {
-                    String option = overloadEnabled ? "Overload" : "Light";
+                    String option;
+                    if (overloadEnabled) {
+                        if (torstol.getStackSize() > 6) {
+                            option = "Overload";
+                        } else {
+                            option = "Light";
+                            println("Overload option selected but only " + torstol.getStackSize() + " sticks available. 6 required.");
+                        }
+                    } else {
+                        option = "Light";
+                    }
                     if (Backpack.interact(torstol.getName(), option)) {
                         println("Interaction successful with Torstol incense sticks using option: " + option);
                     } else {
@@ -1170,9 +1255,7 @@ public class SkeletonScript extends LoopingScript {
     private long animationStart = -1;
 
     private void weAreDead() {
-        // Check if the local player exists and the game state is LOGGED_IN
         if (Client.getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN) {
-            // Check if the player is dead, in combat, has been idle for too long, and is not in Wars Retreat region
             if (Client.getLocalPlayer().getCurrentHealth() == 0 || (!Client.getLocalPlayer().inCombat() && isPlayerIdleTooLong() && !isInWarsRetreatRegion())) {
                 handlePlayerDeathOrIdle();
             }
@@ -1338,6 +1421,9 @@ public class SkeletonScript extends LoopingScript {
             println("Scripture of Jas deactivated.");
             Execution.delay(RandomGenerator.nextInt(500, 600));
         }
+    }
+    private void GoldTracker() {
+
     }
 
 

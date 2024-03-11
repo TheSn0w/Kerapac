@@ -242,12 +242,14 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
         float runsPerHour = calculatePerHour(elapsedTime, loopCount);
         ImGui.Text(String.format("Kills Per Hour: %.2f", runsPerHour));
 
-        // Calculate hours, minutes, and seconds from elapsedTime
+        ImGui.Text("Cumulative Loot Value: " + script.cumulativeLootValue + "K");
+
+        float lootPerHour = calculatePerHour(elapsedTime, script.cumulativeLootValue);
+        ImGui.Text(String.format("Loot Value Per Hour: %.2fK", lootPerHour));
+
         long hours = elapsedTime.toHours();
         long minutes = elapsedTime.toMinutesPart();
         long seconds = elapsedTime.toSecondsPart();
-
-        // Display the running time
         ImGui.Text(String.format("Time Running: %02d:%02d:%02d", hours, minutes, seconds));
     }
 
