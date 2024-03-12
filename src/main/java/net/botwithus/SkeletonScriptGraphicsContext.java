@@ -7,14 +7,18 @@ import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
 import net.botwithus.rs3.imgui.ImGui;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
+    private boolean isScriptRunning = false;
+    private long totalElapsedTime = 0;
     private Instant startTime;
     private String healthFeedbackMessage = "";
+    private String saveSettingsFeedbackMessage = "";
     private String prayerFeedbackMessage = "";
     private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
@@ -69,14 +73,45 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
             ImGui.PushStyleVar(15, 10.f, 5f); // spacing between Text/tabs and checkboxes
             if (ImGui.BeginTabBar("Options", ImGuiWindowFlag.None.getValue())) {
                 if (ImGui.BeginTabItem("Item Toggles", ImGuiWindowFlag.None.getValue())) {
-                    script.runScript = ImGui.Checkbox("Run Script", script.runScript);
+                    if (isScriptRunning) {
+                        if (ImGui.Button("Stop Script")) {
+                            script.stopScript();
+                            totalElapsedTime += Duration.between(startTime, Instant.now()).getSeconds();
+                            isScriptRunning = false;
+                        }
+                    } else {
+                        if (ImGui.Button("Start Script")) {
+                            script.startScript();
+                            startTime = Instant.now(); // Record the start time
+                            isScriptRunning = true;
+                        }
+                    }
+                    long elapsedTime = isScriptRunning ? Duration.between(startTime, Instant.now()).getSeconds() + totalElapsedTime : totalElapsedTime;
+                    ImGui.SeparatorText(String.format("Runtime: %02d:%02d:%02d", elapsedTime / 3600, (elapsedTime % 3600) / 60, elapsedTime % 60));
+
                     if (ImGui.Button("Restart & Teleport to War's Retreat (DEBUG)")) {
                         script.restartScript();
                     }
+                    ImGui.SameLine();
+                    if (ImGui.Button("Save Settings")) {
+                        try {
+                            script.saveConfiguration();
+                            saveSettingsFeedbackMessage = "Settings saved successfully.";
+                        } catch (Exception e) {
+                            saveSettingsFeedbackMessage = "Failed to save settings: " + e.getMessage();
+                        }
+                    }
+
+                    if (!saveSettingsFeedbackMessage.isEmpty()) {
+                        ImGui.Text(saveSettingsFeedbackMessage);
+                    }
+                    ImGui.SeparatorText("Statistics");
+
                     displayLoopCount();
                     ImGui.SeparatorText("Combat Options");
                     script.startAtPortal = ImGui.Checkbox("Start outside Kerapac Entrance", script.startAtPortal);
-                    script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
+                    script.dontuseWarsRetreat = ImGui.Checkbox("Don't use War's Retreat", script.dontuseWarsRetreat);
+                    //script.useCauldron = ImGui.Checkbox("Use War's Retreat Cauldron", script.useCauldron);
                     script.HaveMobile = ImGui.Checkbox("Have Mobile for wars surge?", script.HaveMobile);
                     script.UseScriptureOfWen = ImGui.Checkbox("Use Scripture of Wen", script.UseScriptureOfWen);
                     ImGui.SameLine();
@@ -246,11 +281,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
         float lootPerHour = calculatePerHour(elapsedTime, script.cumulativeLootValue);
         ImGui.Text(String.format("Loot Value Per Hour: %.2fK", lootPerHour));
-
-        long hours = elapsedTime.toHours();
-        long minutes = elapsedTime.toMinutesPart();
-        long seconds = elapsedTime.toSecondsPart();
-        ImGui.Text(String.format("Time Running: %02d:%02d:%02d", hours, minutes, seconds));
     }
 
     private float calculatePerHour(Duration elapsed, int quantity) {
