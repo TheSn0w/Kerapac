@@ -1111,21 +1111,21 @@ public class SkeletonScript extends LoopingScript {
                 Pattern pattern = Pattern.compile("overload", Pattern.CASE_INSENSITIVE);
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
-                Optional<Item> overloadItemOptional = items.stream()
+                Item overload = items.stream()
                         .filter(item -> item.getName() != null && pattern.matcher(item.getName()).find())
-                        .findFirst();
+                        .findFirst()
+                        .orElse(null);
 
-                if (overloadItemOptional.isPresent()) {
-                    Item overloadItem = overloadItemOptional.get();
-                    println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
-                    boolean success = Backpack.interact(overloadItem.getName(), "Drink");
+                if (overload != null) {
+                    println("Drinking overload " + overload.getName());
+                    boolean success = Backpack.interact(overload.getName(), "Drink");
 
                     if (success) {
                         println("Used overload potion successfully.");
                         drinksSinceLastDose = true;
-                        Execution.delay(RandomGenerator.nextInt(600, 620));
+                        Execution.delay(RandomGenerator.nextInt(1180, 1220));
                     } else {
-                        println("Failed to drink " + overloadItem.getName());
+                        println("Failed to drink " + overload.getName());
                     }
                 } else {
                     println("No overload potion found.");
