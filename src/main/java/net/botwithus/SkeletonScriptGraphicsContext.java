@@ -7,7 +7,9 @@ import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
 import net.botwithus.rs3.imgui.ImGui;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -19,11 +21,13 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private Instant startTime;
     private String healthFeedbackMessage = "";
     private String saveSettingsFeedbackMessage = "";
+    private String usernameFeedback = "";
     private String prayerFeedbackMessage = "";
     private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
     private String minDelayStr = "320";
     private String maxDelayStr = "360";
+    private String username = "";
     private String delayUpdateFeedback = ""; // Store feedback messages
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
@@ -124,6 +128,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useRuination = ImGui.Checkbox("Use Ruination", script.useRuination);
                     ImGui.SameLine();
                     script.useSorrow = ImGui.Checkbox("Use Sorrow", script.useSorrow);
+                    script.useEssenceOfFinality = ImGui.Checkbox("Use Essence of Finality", script.useEssenceOfFinality);
+                    script.useVolleyofSouls = ImGui.Checkbox("Use Volley of Souls", script.useVolleyofSouls);
                     script.useVulnBomb = ImGui.Checkbox("Use Vulnerability bomb", script.useVulnBomb);
                     script.useInvokeDeath = ImGui.Checkbox("Use Invoke Death", script.useInvokeDeath);
                     script.useDarkness = ImGui.Checkbox("Use Darkness", script.useDarkness);
@@ -287,5 +293,13 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
         long elapsedSeconds = elapsed.getSeconds();
         if (elapsedSeconds == 0) return 0;
         return (float) quantity / elapsedSeconds * 3600;
+    }
+    private String readVersion() {
+        try {
+            File versionFile = new File("build/version.txt");
+            return new String(Files.readAllBytes(versionFile.toPath()));
+        } catch (IOException e) {
+            return "Version file not found";
+        }
     }
 }
