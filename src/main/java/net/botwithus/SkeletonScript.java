@@ -1095,7 +1095,7 @@ public class SkeletonScript extends LoopingScript {
                     boolean success = Backpack.interact(prayerOrRestorePot.getName(), "Drink");
 
                     if (success) {
-                        Execution.delay(RandomGenerator.nextInt(600, 700));
+                        Execution.delay(RandomGenerator.nextInt(1180, 1220));
                     } else {
                         println("Failed to use " + prayerOrRestorePot.getName());
                     }
