@@ -4,6 +4,7 @@ import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
 import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.events.EventBus;
+import net.botwithus.rs3.events.impl.InventoryUpdateEvent;
 import net.botwithus.rs3.events.impl.ServerTickedEvent;
 import net.botwithus.rs3.game.*;
 import net.botwithus.rs3.game.actionbar.ActionBar;
@@ -79,12 +80,6 @@ public class SkeletonScript extends LoopingScript {
     boolean useDarkness;
     private int loopCounter = 0;
     private int healthThreshold = 50;
-    private String username = "";
-
-    public String getUsername() {
-        return this.username;
-    }
-
     boolean startAtPortal;
     private boolean hasUsedInvokeDeath = false;
     private boolean luckOfTheDwarvesUsed = false;
@@ -1074,7 +1069,7 @@ public class SkeletonScript extends LoopingScript {
 
     public class RegexUtil {
         public static Pattern getPatternForPrayerOrRestore() {
-            return Pattern.compile("prayer|restore", Pattern.CASE_INSENSITIVE);
+            return Pattern.compile(".*prayer.*|.*restore.*", Pattern.CASE_INSENSITIVE);
         }
     }
 
