@@ -258,28 +258,14 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handlePraying() {
-        int maxPrayerPoints = Skills.PRAYER.getLevel() * 100;
-        int maxSummoningPoints = Skills.SUMMONING.getLevel() * 100;
 
         EntityResultSet<SceneObject> altarOfWarResults = SceneObjectQuery.newQuery().name("Altar of War").results();
 
-        if (getLocalPlayer() != null && (getLocalPlayer().getPrayerPoints() < maxPrayerPoints || getLocalPlayer().getSummoningPoints() < maxSummoningPoints)) {
-            if (!altarOfWarResults.isEmpty()) {
-                SceneObject altar = altarOfWarResults.nearest();
-                if (altar != null && altar.interact("Pray")) {
-                    println("Prayer/Summoning points are below " + maxPrayerPoints + "," + maxSummoningPoints + ". Praying at Altar of War!");
-                    boolean success = Execution.delayUntil(15000, () ->
-                            getLocalPlayer().getPrayerPoints() >= maxPrayerPoints && getLocalPlayer().getSummoningPoints() >= maxSummoningPoints);
-                    if (!success) {
-                        println("Failed to restore Prayer/Summoning points within the timeout.");
-                    }
-                }
-            } else {
-                println("No Altar of War found.");
-            }
-        } else if (getLocalPlayer() != null) {
-            if (getLocalPlayer().getPrayerPoints() >= maxPrayerPoints) {
-                println("Were already at Maximum");
+        if (!altarOfWarResults.isEmpty()) {
+            SceneObject altar = altarOfWarResults.nearest();
+            if (altar != null && altar.interact("Pray")) {
+                println("Praying at Altar of War!");
+                Execution.delay(RandomGenerator.nextInt(4000, 4500));
                 handleCauldron();
             }
         }
