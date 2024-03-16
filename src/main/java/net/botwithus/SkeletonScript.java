@@ -93,6 +93,8 @@ public class SkeletonScript extends LoopingScript {
     private int tickCounter = 0;
     private boolean scriptRunning = false;
     private Instant scriptStartTime;
+    private boolean hasInteractedWithDeath;
+    private boolean hasConfirmedReclaim;
 
     public int getLoopCounter() {
         return loopCounter;
@@ -110,6 +112,7 @@ public class SkeletonScript extends LoopingScript {
         TRANSITION,
         WARSRETREAT,
         RESTART_SCRIPT,
+        DEATHS_OFFICE,
     }
 
 
@@ -148,15 +151,14 @@ public class SkeletonScript extends LoopingScript {
 
     @Override
     public void onLoop() {
-        if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
-            return;
+        if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN) {
+
+            if (!scriptRunning) {
+                return;
+            }
         }
         if (!kerapacPortalInitialized) {
-            if (startAtPortal) {
-                botState = BotState.KERAPACPORTAL;
-            } else {
-                botState = BotState.IDLE;
-            }
+            botState = startAtPortal ? BotState.KERAPACPORTAL : BotState.IDLE;
             kerapacPortalInitialized = true;
         }
         TeleportToWarOnHealth();
@@ -211,7 +213,14 @@ public class SkeletonScript extends LoopingScript {
             case RESTART_SCRIPT -> {
                 restartScript();
             }
+            case DEATHS_OFFICE -> {
+                DeathsOffice();
+            }
         }
+    }
+    private boolean isPlayerDead() {
+        LocalPlayer player = Client.getLocalPlayer();
+        return player != null && player.getCurrentHealth() == 0;
     }
 
     private void IdleDelays() {
@@ -542,9 +551,8 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void kerapacPhase1() {
-        Player localPlayer = getLocalPlayer();
-        if (localPlayer == null) {
-            println("Local player not found, aborting Kerapac phase 1.");
+        Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
+        if (kerapac == null && getLocalPlayer() == null) {
             return;
         }
         if (UseScriptureOfWen) {
@@ -613,51 +621,62 @@ public class SkeletonScript extends LoopingScript {
 
     private void monitorKerapacAnimations() {
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
-        if (getLocalPlayer() != null) {
-            if (eatfood) {
-                eatFood();
-            }
-            if (useSaraBrew) {
-                UseSaraBrew();
-            }
-            if (useSaraBrewandBlubber) {
-                UseSaraandBlubber();
-            }
-            if (useDarkness) {
-                useDarkness();
-            }
-            if (useprayer) {
-                usePrayerOrRestorePots();
-            }
-            activatePrayers();
+
+        if (kerapac == null) {
+            println("Kerapac is not present. Skipping this cycle.");
+            return;
         }
-        if (kerapac != null && getLocalPlayer() != null) {
-            TeleportToWarOnHealth();
+        if (isPlayerDead()) {
+            botState = BotState.DEATHS_OFFICE;
+            return;
+        }
 
-            int NecrosisStacks = VarManager.getVarValue(VarDomainType.PLAYER, 10986);
-            int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
+        if (getLocalPlayer() == null) {
+            println("Local player not found. Skipping this cycle.");
+            return;
+        }
+        if (eatfood) {
+            eatFood();
+        }
+        if (useSaraBrew) {
+            UseSaraBrew();
+        }
+        if (useSaraBrewandBlubber) {
+            UseSaraandBlubber();
+        }
+        if (useDarkness) {
+            useDarkness();
+        }
+        if (useprayer) {
+            usePrayerOrRestorePots();
+        }
+        activatePrayers();
 
-            if (useVolleyofSouls) {
-                if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
-                        && RisidualSouls == 5) {
-                    println("Risidual Souls: " + RisidualSouls);
-                    ScriptConsole.println("Used Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
+
+        int NecrosisStacks = VarManager.getVarValue(VarDomainType.PLAYER, 10986);
+        int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
+
+        if (useVolleyofSouls) {
+            if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+                    && RisidualSouls == 5) {
+                println("Risidual Souls: " + RisidualSouls);
+                ScriptConsole.println("Used Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
+                Execution.delay(RandomGenerator.nextInt(1780, 1820));
+            }
+        }
+
+        if (useEssenceOfFinality) {
+            if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+                    && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().getAdrenaline() >= 300
+                    & ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty() && NecrosisStacks >= 12) {
+                if (ActionBar.getCooldown("Death Skulls") >= 5) {
+                    println("Necrosis stacks: " + NecrosisStacks);
+                    ScriptConsole.println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
                     Execution.delay(RandomGenerator.nextInt(1780, 1820));
                 }
             }
-
-            if (useEssenceOfFinality) {
-                if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
-                        && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().getAdrenaline() >= 300
-                        & ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty() && NecrosisStacks >= 12) {
-                    if (ActionBar.getCooldown("Death Skulls") >= 5) {
-                        println("Necrosis stacks: " + NecrosisStacks);
-                        ScriptConsole.println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
-                        Execution.delay(RandomGenerator.nextInt(1780, 1820));
-                    }
-                }
-            }
         }
+
 
         int animationID = kerapac.getAnimationId();
         handleAnimation(kerapac, animationID);
@@ -807,8 +826,10 @@ public class SkeletonScript extends LoopingScript {
                     {
                         println("`check the delays in the gui if you see this message`");
                         Execution.delayUntil(10000, () -> fiveTilesAway.equals(getLocalPlayer().getCoordinate()));
-                        npc.interact("Attack");
-                        println("Re-engaging Kerapac after walking away.");
+                        if (kerapac != null && kerapac.getOptions().contains("Attack")) {
+                            kerapac.interact("Attack");
+                            println("Attacking Kerapac after walking away.");
+                        }
                     }
                 }
                 break;
@@ -933,6 +954,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void TeleportToWarOnHealth() {
+        final int warsRetreatRegionId = 13214; // Assuming 13214 is the region ID for War's Retreat
         LocalPlayer player = Client.getLocalPlayer();
         if (player != null) {
             double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
@@ -956,9 +978,18 @@ public class SkeletonScript extends LoopingScript {
                     println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
                     ActionBar.useAbility("War's Retreat Teleport");
 
-                    Execution.delay(5000);
+                    // Wait a bit for the teleport action to start/finish
+                    Execution.delay(5000); // Adjust delay as necessary for the teleport
 
-                    botState = BotState.IDLE;
+                    // Re-fetch the player's position after the delay
+                    player = Client.getLocalPlayer();
+                    if (player != null && player.getCoordinate().getRegionId() == warsRetreatRegionId) {
+                        println("Successfully teleported to War's Retreat.");
+                        botState = BotState.IDLE;
+                    } else {
+                        println("Teleport attempt failed or player is not in War's Retreat.");
+                        // Handle failure or wrong destination here
+                    }
                 }
             }
         }
@@ -1459,6 +1490,84 @@ public class SkeletonScript extends LoopingScript {
             println("Deactivating Scripture of Jas.");
             Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate");
         }
+    }
+    private boolean hasFinalizedReclamation = false;
+
+    public void DeathsOffice() {
+        if (!hasInteractedWithDeath && interactWithDeath()) {
+            hasInteractedWithDeath = true;
+        }
+
+        if (hasInteractedWithDeath && !hasConfirmedReclaim) {
+            hasConfirmedReclaim = confirmReclaim();
+        }
+
+        if (hasConfirmedReclaim && !hasFinalizedReclamation) {
+            hasFinalizedReclamation = finalizeReclamation();
+        }
+    }
+
+    private boolean interactWithDeath() {
+        final int maxRetries = 3; // Maximum number of interaction attempts
+        boolean success = false;
+
+        for (int attempt = 1; attempt <= maxRetries && !success; attempt++) {
+            if (Interfaces.isOpen(1626)) {
+                println("Interface 1626 is already open.");
+                return true; // Interface is already open, no need to interact again
+            }
+
+            Npc death = NpcQuery.newQuery().name("Death").results().nearest();
+            if (death != null) {
+                println("Attempting to interact with Death. Attempt " + attempt);
+                success = death.interact("Reclaim items");
+
+                if (success) {
+                    hasInteractedWithDeath = true;
+                    Execution.delay(RandomGenerator.nextInt(2500, 3000));
+                    success = Execution.delayUntil(5000, () -> Interfaces.isOpen(1626)); // Wait up to 10 seconds
+                }
+            }
+
+            if (!success) {
+                Execution.delay(RandomGenerator.nextInt(4000, 5000));
+            }
+        }
+
+        return success; // Return the result of the interaction attempts
+    }
+
+    private boolean confirmReclaim() {
+        if (!Interfaces.isOpen(1626)) {
+            return false;
+        }
+
+        ComponentQuery query = ComponentQuery.newQuery(1626);
+        java.util.List<Component> components = query.componentIndex(47).results().stream().toList();
+
+        if (!components.isEmpty() && components.get(0).interact(1)) {
+            println("Reclaiming.");
+            Execution.delay(RandomGenerator.nextInt(2500, 3000));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean finalizeReclamation() {
+        if (!Interfaces.isOpen(1626)) {
+            return false;
+        }
+
+        ComponentQuery query = ComponentQuery.newQuery(1626);
+        java.util.List<Component> components = query.componentIndex(72).results().stream().toList();
+
+        if (!components.isEmpty() && components.get(0).interact(1)) {
+            println("Accepting Reclaim.");
+            Execution.delay(RandomGenerator.nextInt(2500, 3000));
+            botState = BotState.WARSRETREAT;
+            return true;
+        }
+        return false;
     }
 
 
