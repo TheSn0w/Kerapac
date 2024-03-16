@@ -93,8 +93,6 @@ public class SkeletonScript extends LoopingScript {
     private int tickCounter = 0;
     private boolean scriptRunning = false;
     private Instant scriptStartTime;
-    private boolean hasInteractedWithDeath;
-    private boolean hasConfirmedReclaim;
 
     public int getLoopCounter() {
         return loopCounter;
@@ -162,6 +160,10 @@ public class SkeletonScript extends LoopingScript {
             kerapacPortalInitialized = true;
         }
         TeleportToWarOnHealth();
+        if (NpcQuery.newQuery().name("Death").results().first() != null) {
+            DeathsOffice();
+        }
+
         switch (botState) {
             case IDLE -> {
                 IdleDelays();
@@ -218,6 +220,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private boolean isPlayerDead() {
         LocalPlayer player = Client.getLocalPlayer();
         return player != null && player.getCurrentHealth() == 0;
@@ -622,17 +625,8 @@ public class SkeletonScript extends LoopingScript {
     private void monitorKerapacAnimations() {
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
 
-        if (kerapac == null) {
-            println("Kerapac is not present. Skipping this cycle.");
-            return;
-        }
-        if (isPlayerDead()) {
+        if (kerapac == null || isPlayerDead() || getLocalPlayer() == null) {
             botState = BotState.DEATHS_OFFICE;
-            return;
-        }
-
-        if (getLocalPlayer() == null) {
-            println("Local player not found. Skipping this cycle.");
             return;
         }
         if (eatfood) {
@@ -651,6 +645,8 @@ public class SkeletonScript extends LoopingScript {
             usePrayerOrRestorePots();
         }
         activatePrayers();
+        TeleportToWarOnHealth();
+        DeathsOffice();
 
 
         int NecrosisStacks = VarManager.getVarValue(VarDomainType.PLAYER, 10986);
@@ -768,7 +764,6 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-
     private boolean shouldSurge = false;
     private boolean surged = false;
     private boolean hasUsedAnticipation = false;
@@ -778,88 +773,85 @@ public class SkeletonScript extends LoopingScript {
 
     private void handleAnimation(Npc npc, int animationId) {
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
-        if (kerapac == null && getLocalPlayer() == null) {
-            println("Npc not found, aborting animation handling.");
-            return;
-        }
-        switch (animationId) {
-            case 34193:
-                lastAnimationId = 34193;
-                break;
-            case 34194:
-                if (lastAnimationId == 34193 && kerapac != null && kerapac.getCurrentHealth() <= 180000) {
-                    if (!firstAnimationEncountered) {
-                        firstAnimationEncountered = true;
-                        println("Ignoring the spawn animation.");
-                        Execution.delayUntil(RandomGenerator.nextInt(5000, 10000), () -> kerapac.getAnimationId() == 34192);
-                    } else {
-                        shouldSurge = true;
-                        if (!surgeMessagePrinted) {
-                            println("Detected animation where surging should be considered.");
-                            surgeMessagePrinted = true;
+        if (kerapac != null && getLocalPlayer() != null) {
+            TeleportToWarOnHealth();
+            switch (animationId) {
+                case 34193:
+                    lastAnimationId = 34193;
+                    break;
+                case 34194:
+                    if (lastAnimationId == 34193 && kerapac.getCurrentHealth() <= 180000) {
+                        if (!firstAnimationEncountered) {
+                            firstAnimationEncountered = true;
+                            println("Ignoring the spawn animation.");
+                            Execution.delayUntil(RandomGenerator.nextInt(5000, 10000), () -> kerapac.getAnimationId() == 34192);
+                        } else {
+                            shouldSurge = true;
+                            if (!surgeMessagePrinted) {
+                                println("Detected animation where surging should be considered.");
+                                surgeMessagePrinted = true;
+                            }
+                        }
+                        if (shouldSurge && !surged) {
+                            int delayTime = RandomGenerator.nextInt(getMinDelay(), getMaxDelay());
+                            println("Getting ready to Surge.");
+                            println("Delaying for " + delayTime + " milliseconds before using Surge.");
+                            Execution.delay(delayTime);
+                            ScriptConsole.println("Used Surge: " + ActionBar.useAbility("Surge"));
+                            surged = true;
+                        }
+
+                        if (surged && npc != null) {
+                            Execution.delay(RandomGenerator.nextInt(600, 650));
+                            npc.interact("Attack");
+                            println("Attacking Kerapac after Surging.");
+                            shouldSurge = false;
+                            surged = false;
                         }
                     }
-                if (shouldSurge && !surged) {
-                    int delayTime = RandomGenerator.nextInt(getMinDelay(), getMaxDelay());
-                    println("Getting ready to Surge.");
-                    println("Delaying for " + delayTime + " milliseconds before using Surge.");
-                    Execution.delay(delayTime);
-                    ScriptConsole.println("Used Surge: " + ActionBar.useAbility("Surge"));
-                    surged = true;
-                }
-
-                if (surged && npc != null) {
-                    Execution.delay(RandomGenerator.nextInt(600, 650));
-                    npc.interact("Attack");
-                    println("Attacking Kerapac after Surging.");
-                    shouldSurge = false;
-                    surged = false;
-                }
-                }
-                lastAnimationId = -1;
-                break;
-            case 34195:
-                if (getLocalPlayer() != null) {
+                    lastAnimationId = -1;
+                    break;
+                case 34195:
                     Coordinate fiveTilesAway = getLocalPlayer().getCoordinate().derive(+7, 0, 0);
 
                     Movement.walkTo(fiveTilesAway.getX(), fiveTilesAway.getY(), true);
-                    {
-                        println("`check the delays in the gui if you see this message`");
-                        Execution.delayUntil(10000, () -> fiveTilesAway.equals(getLocalPlayer().getCoordinate()));
-                        if (kerapac != null && kerapac.getOptions().contains("Attack")) {
-                            kerapac.interact("Attack");
-                            println("Attacking Kerapac after walking away.");
-                        }
+                {
+                    println("`check the delays in the gui if you see this message`");
+                    Execution.delayUntil(10000, () -> fiveTilesAway.equals(getLocalPlayer().getCoordinate()));
+                    if (kerapac.getOptions().contains("Attack")) {
+                        kerapac.interact("Attack");
+                        println("Attacking Kerapac after walking away.");
                     }
                 }
                 break;
-            case 34198:
-                if (getLocalPlayer() != null && kerapac != null && kerapac.getCurrentHealth() >= 65000) {
-                    Coordinate kerapacLocation = Objects.requireNonNull(kerapac.getCoordinate());
+                case 34198:
+                    if (kerapac.getCurrentHealth() >= 65000) {
+                        Coordinate kerapacLocation = Objects.requireNonNull(kerapac.getCoordinate());
 
-                    Movement.walkTo(kerapacLocation.getX(), kerapacLocation.getY(), true);
-                    {
-                        println("Moving towards Kerapac...");
-                        Execution.delayUntil(10000, () -> !getLocalPlayer().isMoving());
+                        Movement.walkTo(kerapacLocation.getX(), kerapacLocation.getY(), true);
+                        {
+                            println("Moving towards Kerapac...");
+                            Execution.delayUntil(10000, () -> !getLocalPlayer().isMoving());
 
-                        if (ActionBar.getCooldown("Anticipation") == 0 && !hasUsedAnticipation) {
-                            ScriptConsole.println("Used Anticipation: " + ActionBar.useAbility("Anticipation"));
-                            hasUsedAnticipation = true;
-                        }
-                        Execution.delay(RandomGenerator.nextInt(4200, 5000));
+                            if (ActionBar.getCooldown("Anticipation") == 0 && !hasUsedAnticipation) {
+                                ScriptConsole.println("Used Anticipation: " + ActionBar.useAbility("Anticipation"));
+                                hasUsedAnticipation = true;
+                            }
+                            Execution.delay(RandomGenerator.nextInt(4200, 5000));
 
 
-                        if (kerapac.getOptions().contains("Attack")) {
-                            hasUsedAnticipation = false;
-                            kerapac.interact("Attack");
-                            println("Attacking Kerapac after reaching his location.");
+                            if (kerapac.getOptions().contains("Attack")) {
+                                hasUsedAnticipation = false;
+                                kerapac.interact("Attack");
+                                println("Attacking Kerapac after reaching his location.");
+                            }
                         }
                     }
-                }
-                break;
-            case 34186:
-                botState = BotState.LOOTING;
-                break;
+                    break;
+                case 34186:
+                    botState = BotState.LOOTING;
+                    break;
+            }
         }
     }
 
@@ -1017,6 +1009,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     public String extractNumberWithSuffix(String source) {
         String regex = "(?i)([\\d,]+)(k|M)?";
         Pattern pattern = Pattern.compile(regex);
@@ -1097,6 +1090,7 @@ public class SkeletonScript extends LoopingScript {
             return Pattern.compile("prayer|restore", Pattern.CASE_INSENSITIVE);
         }
     }
+
     public void usePrayerOrRestorePots() {
         if (getLocalPlayer() != null) {
             int currentPrayerPoints = getLocalPlayer().getPrayerPoints();
@@ -1124,6 +1118,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     Pattern overloads = Pattern.compile(Regex.getPatternForContainsString("overload").pattern(), Pattern.CASE_INSENSITIVE);
 
     public void drinkOverloads() {
@@ -1149,6 +1144,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     public void eatFood() {
         if (getLocalPlayer() != null) {
             if (getLocalPlayer().getAnimationId() == 18001)
@@ -1242,6 +1238,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void kwuarmIncenseSticks() {
         ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
                 .name("Kwuarm incense sticks")
@@ -1474,6 +1471,7 @@ public class SkeletonScript extends LoopingScript {
             println("No TH key found to destroy.");
         }
     }
+
     private void activateScriptureOfJas() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
             println("Activating Scripture of Jas.");
@@ -1484,90 +1482,73 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-
     private void deactivateScriptureOfJas() {
         if (VarManager.getVarbitValue(30605) == 1) {
             println("Deactivating Scripture of Jas.");
             Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate");
         }
     }
-    private boolean hasFinalizedReclamation = false;
 
     public void DeathsOffice() {
-        if (!hasInteractedWithDeath && interactWithDeath()) {
-            hasInteractedWithDeath = true;
+        // Directly start the death office interaction process.
+        // Each method will internally manage its part of the process and the transition to the next step.
+        interactWithDeath();
+    }
+
+    private void interactWithDeath() {
+        Npc death = NpcQuery.newQuery().name("Death").results().nearest();
+        if (death == null) {
+            return;
         }
 
-        if (hasInteractedWithDeath && !hasConfirmedReclaim) {
-            hasConfirmedReclaim = confirmReclaim();
-        }
-
-        if (hasConfirmedReclaim && !hasFinalizedReclamation) {
-            hasFinalizedReclamation = finalizeReclamation();
+        println("Attempting to interact with Death.");
+        Execution.delay(RandomGenerator.nextInt(3500, 5000));
+        if (death.interact("Reclaim items")) {
+            println("Interaction initiated. Waiting for interface 1626 to open.");
+            if (Execution.delayUntil(5000, () -> Interfaces.isOpen(1626))) {
+                println("Successfully opened interface 1626. Moving to reclaim confirmation.");
+                Execution.delay(RandomGenerator.nextInt(3500, 5000));
+                confirmReclaim(); // Proceed to confirm reclaim if successful.
+            } else {
+                println("Failed to open interface 1626 after interacting with Death.");
+            }
+        } else {
+            println("Failed to initiate interaction with Death.");
         }
     }
 
-    private boolean interactWithDeath() {
-        final int maxRetries = 3; // Maximum number of interaction attempts
-        boolean success = false;
-
-        for (int attempt = 1; attempt <= maxRetries && !success; attempt++) {
-            if (Interfaces.isOpen(1626)) {
-                println("Interface 1626 is already open.");
-                return true; // Interface is already open, no need to interact again
-            }
-
-            Npc death = NpcQuery.newQuery().name("Death").results().nearest();
-            if (death != null) {
-                println("Attempting to interact with Death. Attempt " + attempt);
-                success = death.interact("Reclaim items");
-
-                if (success) {
-                    hasInteractedWithDeath = true;
-                    Execution.delay(RandomGenerator.nextInt(2500, 3000));
-                    success = Execution.delayUntil(5000, () -> Interfaces.isOpen(1626)); // Wait up to 10 seconds
-                }
-            }
-
-            if (!success) {
-                Execution.delay(RandomGenerator.nextInt(4000, 5000));
-            }
-        }
-
-        return success; // Return the result of the interaction attempts
-    }
-
-    private boolean confirmReclaim() {
+    private void confirmReclaim() {
         if (!Interfaces.isOpen(1626)) {
-            return false;
+            println("Interface 1626 is not open. Cannot confirm reclaim.");
+            return;
         }
 
         ComponentQuery query = ComponentQuery.newQuery(1626);
-        java.util.List<Component> components = query.componentIndex(47).results().stream().toList();
-
+        List<Component> components = query.componentIndex(47).results().stream().toList();
         if (!components.isEmpty() && components.get(0).interact(1)) {
-            println("Reclaiming.");
-            Execution.delay(RandomGenerator.nextInt(2500, 3000));
-            return true;
+            println("Reclaim confirmation initiated. Waiting for finalization option.");
+            Execution.delay(RandomGenerator.nextInt(3500, 5000));
+            finalizeReclamation(); // Proceed to finalize reclamation if successful.
+        } else {
+            println("Failed to confirm reclaim with Death.");
         }
-        return false;
     }
 
-    private boolean finalizeReclamation() {
+    private void finalizeReclamation() {
         if (!Interfaces.isOpen(1626)) {
-            return false;
+            println("Interface 1626 is not open. Cannot finalize reclaim.");
+            return;
         }
 
         ComponentQuery query = ComponentQuery.newQuery(1626);
-        java.util.List<Component> components = query.componentIndex(72).results().stream().toList();
-
+        List<Component> components = query.componentIndex(72).results().stream().toList();
         if (!components.isEmpty() && components.get(0).interact(1)) {
-            println("Accepting Reclaim.");
-            Execution.delay(RandomGenerator.nextInt(2500, 3000));
-            botState = BotState.WARSRETREAT;
-            return true;
+            println("Reclaim finalized. Moving to post-reclaim actions.");
+            Execution.delay(RandomGenerator.nextInt(3500, 5000));
+            botState = BotState.WARSRETREAT; // Update bot state to continue with the script flow.
+        } else {
+            println("Failed to finalize reclaim with Death.");
         }
-        return false;
     }
 
 
