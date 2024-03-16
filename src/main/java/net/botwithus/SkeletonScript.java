@@ -159,7 +159,6 @@ public class SkeletonScript extends LoopingScript {
             botState = startAtPortal ? BotState.KERAPACPORTAL : BotState.IDLE;
             kerapacPortalInitialized = true;
         }
-        TeleportToWarOnHealth();
         if (NpcQuery.newQuery().name("Death").results().first() != null) {
             DeathsOffice();
         }
@@ -946,41 +945,43 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void TeleportToWarOnHealth() {
-        final int warsRetreatRegionId = 13214; // Assuming 13214 is the region ID for War's Retreat
-        LocalPlayer player = Client.getLocalPlayer();
-        if (player != null) {
-            double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
-            if (healthPercentage < healthThreshold) {
-                ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+        if (eatfood || useSaraBrew || useSaraBrewandBlubber) {
+            final int warsRetreatRegionId = 13214; // Assuming 13214 is the region ID for War's Retreat
+            LocalPlayer player = Client.getLocalPlayer();
+            if (player != null) {
+                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
+                if (healthPercentage < healthThreshold) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
-                Pattern healingItemPattern = Pattern.compile("saradomin", Pattern.CASE_INSENSITIVE);
+                    Pattern healingItemPattern = Pattern.compile("saradomin", Pattern.CASE_INSENSITIVE);
 
-                boolean hasHealingItem = items.stream().anyMatch(item -> {
-                    if (item.getName() != null && healingItemPattern.matcher(item.getName()).find()) {
-                        return true;
-                    }
-                    ItemType itemType = item.getConfigType();
-                    if (itemType != null) {
-                        return itemType.getBackpackOptions().contains("Eat");
-                    }
-                    return false;
-                });
+                    boolean hasHealingItem = items.stream().anyMatch(item -> {
+                        if (item.getName() != null && healingItemPattern.matcher(item.getName()).find()) {
+                            return true;
+                        }
+                        ItemType itemType = item.getConfigType();
+                        if (itemType != null) {
+                            return itemType.getBackpackOptions().contains("Eat");
+                        }
+                        return false;
+                    });
 
-                if (!hasHealingItem) {
-                    println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
-                    ActionBar.useAbility("War's Retreat Teleport");
+                    if (!hasHealingItem) {
+                        println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
+                        ActionBar.useAbility("War's Retreat Teleport");
 
-                    // Wait a bit for the teleport action to start/finish
-                    Execution.delay(5000); // Adjust delay as necessary for the teleport
+                        // Wait a bit for the teleport action to start/finish
+                        Execution.delay(5000); // Adjust delay as necessary for the teleport
 
-                    // Re-fetch the player's position after the delay
-                    player = Client.getLocalPlayer();
-                    if (player != null && player.getCoordinate().getRegionId() == warsRetreatRegionId) {
-                        println("Successfully teleported to War's Retreat.");
-                        botState = BotState.IDLE;
-                    } else {
-                        println("Teleport attempt failed or player is not in War's Retreat.");
-                        // Handle failure or wrong destination here
+                        // Re-fetch the player's position after the delay
+                        player = Client.getLocalPlayer();
+                        if (player != null && player.getCoordinate().getRegionId() == warsRetreatRegionId) {
+                            println("Successfully teleported to War's Retreat.");
+                            botState = BotState.IDLE;
+                        } else {
+                            println("Teleport attempt failed or player is not in War's Retreat.");
+                            // Handle failure or wrong destination here
+                        }
                     }
                 }
             }
