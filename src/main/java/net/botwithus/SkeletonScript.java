@@ -1087,7 +1087,7 @@ public class SkeletonScript extends LoopingScript {
 
                 if (prayerOrRestorePot != null) {
                     println("Drinking " + prayerOrRestorePot.getName());
-                    boolean success = Backpack.interact(prayerOrRestorePot.getName(), "Drink");
+                    boolean success = ActionBar.useItem(prayerOrRestorePot.getName(), "Drink");
 
                     if (success) {
                         Execution.delay(RandomGenerator.nextInt(1180, 1220));
