@@ -544,12 +544,6 @@ public class SkeletonScript extends LoopingScript {
         if (useScriptureOfJas) {
             activateScriptureOfJas();
         }
-        if (useoverload) {
-            drinkOverloads();
-        }
-        if (useWeaponPoison) {
-            useWeaponPoison();
-        }
 
         Coordinate kerapacPhase1StartCoord = Client.getLocalPlayer().getCoordinate();
         Execution.delay(RandomGenerator.nextInt(1000, 1500));
@@ -620,6 +614,12 @@ public class SkeletonScript extends LoopingScript {
         }
         if (useDarkness) {
             useDarkness();
+        }
+        if (useoverload) {
+            drinkOverloads();
+        }
+        if (useWeaponPoison) {
+            useWeaponPoison();
         }
         if (useprayer) {
             usePrayerOrRestorePots();
@@ -1087,7 +1087,7 @@ public class SkeletonScript extends LoopingScript {
 
                 if (prayerOrRestorePot != null) {
                     println("Drinking " + prayerOrRestorePot.getName());
-                    boolean success = ActionBar.useItem(prayerOrRestorePot.getName(), "Drink");
+                    boolean success = Backpack.interact(prayerOrRestorePot.getName(), "Drink");
 
                     if (success) {
                         Execution.delay(RandomGenerator.nextInt(1180, 1220));
@@ -1472,9 +1472,12 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void DeathsOffice() {
-        // Directly start the death office interaction process.
-        // Each method will internally manage its part of the process and the transition to the next step.
-        interactWithDeath();
+        Npc death = NpcQuery.newQuery().name("Death").results().nearest();
+        if (getLocalPlayer() != null) {
+            if (death != null) {
+                interactWithDeath();
+            }
+        }
     }
 
     private void interactWithDeath() {
@@ -1482,9 +1485,9 @@ public class SkeletonScript extends LoopingScript {
         if (death == null) {
             return;
         }
+        println("Ohh Dear, you have KBDs luck, you died. Let's go to Death's Office.");
 
-        println("Attempting to interact with Death.");
-        Execution.delay(RandomGenerator.nextInt(3500, 5000));
+        Execution.delay(RandomGenerator.nextInt(8000, 10000));
         if (death.interact("Reclaim items")) {
             println("Interaction initiated. Waiting for interface 1626 to open.");
             if (Execution.delayUntil(5000, () -> Interfaces.isOpen(1626))) {
