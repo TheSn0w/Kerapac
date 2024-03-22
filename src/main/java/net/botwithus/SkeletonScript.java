@@ -113,7 +113,7 @@ public class SkeletonScript extends LoopingScript {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(this.getConsole(), this);
         loadConfiguration();
-        this.loopDelay = 100;
+        this.loopDelay = 600;
     }
 
     public void startScript() {
@@ -1476,6 +1476,7 @@ public class SkeletonScript extends LoopingScript {
         Npc death = NpcQuery.newQuery().name("Death").results().nearest();
         if (getLocalPlayer() != null) {
             if (death != null) {
+                Execution.delay(RandomGenerator.nextInt(8000, 10000));
                 interactWithDeath();
             }
         }
@@ -1483,11 +1484,7 @@ public class SkeletonScript extends LoopingScript {
 
     private void interactWithDeath() {
         Npc death = NpcQuery.newQuery().name("Death").results().nearest();
-        if (death == null) {
-            return;
-        }
 
-        Execution.delay(RandomGenerator.nextInt(8000, 10000));
         if (death.interact("Reclaim items")) {
             println("Interaction initiated. Waiting for interface 1626 to open.");
             if (Execution.delayUntil(5000, () -> Interfaces.isOpen(1626))) {
