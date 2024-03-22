@@ -155,6 +155,7 @@ public class SkeletonScript extends LoopingScript {
             kerapacPortalInitialized = true;
         }
         if (NpcQuery.newQuery().name("Death").results().first() != null) {
+            Execution.delay(RandomGenerator.nextInt(5000, 10000));
             DeathsOffice();
         }
 
@@ -1485,7 +1486,6 @@ public class SkeletonScript extends LoopingScript {
         if (death == null) {
             return;
         }
-        println("Ohh Dear, you have KBDs luck, you died. Let's go to Death's Office.");
 
         Execution.delay(RandomGenerator.nextInt(8000, 10000));
         if (death.interact("Reclaim items")) {
