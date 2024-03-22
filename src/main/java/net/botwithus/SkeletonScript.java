@@ -222,6 +222,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void IdleDelays() {
+        if (!scriptRunning) {
+            return;
+        }
         if (getLocalPlayer() != null)
             if (getLocalPlayer().getCoordinate().getRegionId() != 13214) {
                 useWarsRetreat();
@@ -233,6 +236,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handleCampfire() {
+        if (!scriptRunning) {
+            return;
+        }
         EntityResultSet<SceneObject> Campfire = SceneObjectQuery.newQuery().name("Campfire").option("Warm hands").results();
         if (getLocalPlayer() == null)
             return;
@@ -254,6 +260,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handlePraying() {
+        if (!scriptRunning) {
+            return;
+        }
 
         EntityResultSet<SceneObject> altarOfWarResults = SceneObjectQuery.newQuery().name("Altar of War").results();
 
@@ -268,6 +277,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handleCauldron() {
+        if (!scriptRunning) {
+            return;
+        }
         if (VarManager.getVarbitValue(26037) == 0 && useCauldron) {
             EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(127472).option("Drink from").results();
 
@@ -288,6 +300,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handleBank() {
+        if (!scriptRunning) {
+            return;
+        }
         EntityResultSet<SceneObject> BankChest = SceneObjectQuery.newQuery().name("Bank chest").results();
         if (getLocalPlayer() == null)
             return;
@@ -311,6 +326,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void manageFamiliarSummoning() {
+        if (!scriptRunning) {
+            return;
+        }
         boolean isFamiliarSummoned = isFamiliarSummoned();
         int familiarTimeRemaining = VarManager.getVarbitValue(6055);
 
@@ -338,6 +356,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handleIncense() {
+        if (!scriptRunning) {
+            return;
+        }
         if (LantadymeIncence) {
             lantadymeIncenseSticks();
             Execution.delay(RandomGenerator.nextInt(1000, 1500));
@@ -372,6 +393,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void summonFamiliar() {
+        if (!scriptRunning) {
+            return;
+        }
         ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
         Item itemToSummon = items.stream()
@@ -459,6 +483,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void handleKerepacPortal() {
+        if (!scriptRunning) {
+            return;
+        }
         EntityResultSet<SceneObject> kerapacPortalQuery = SceneObjectQuery.newQuery().name("Portal (Kerapac)").results();
         if (!kerapacPortalQuery.isEmpty()) {
             SceneObject kerapacPortal = kerapacPortalQuery.nearest();
@@ -480,6 +507,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void activatePrayers() {
+        if (!scriptRunning) {
+            return;
+        }
         boolean Ruination = VarManager.getVarbitValue(53280) == 0;
         boolean DeflectMagic = VarManager.getVarbitValue(16768) == 0;
         boolean ProtectMagic = VarManager.getVarbitValue(16745) == 0;
@@ -504,6 +534,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void useWarsRetreat() {
+        if (!scriptRunning) {
+            return;
+        }
         if (getLocalPlayer() != null) {
             ScriptConsole.println("Used Wars Retreat: " + ActionBar.useAbility("War's Retreat Teleport"), new Object[0]);
             Execution.delay(RandomGenerator.nextInt(4000, 5000));
@@ -512,6 +545,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void InteractWithColloseum() {
+        if (!scriptRunning) {
+            return;
+        }
         Execution.delay(RandomGenerator.nextInt(1250, 1500));
         EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(120046).option("Enter").results();
         if (!results.isEmpty()) {
@@ -525,6 +561,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void InteractWithDialog() {
+        if (!scriptRunning) {
+            return;
+        }
         if (Interfaces.isOpen(1591)) {
             Execution.delay(RandomGenerator.nextInt(800, 1000));
             Start();
@@ -535,6 +574,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void kerapacPhase1() {
+        if (!scriptRunning) {
+            return;
+        }
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
         if (kerapac == null && getLocalPlayer() == null) {
             return;
@@ -588,6 +630,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void conjure() {
+        if (!scriptRunning) {
+            return;
+        }
         if (ActionBar.containsAbility("Conjure Undead Army")) {
             ScriptConsole.println("Used Conjure Undead Army: " + ActionBar.useAbility("Conjure Undead Army"));
         } else {
@@ -598,6 +643,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void monitorKerapacAnimations() {
+        if (!scriptRunning) {
+            return;
+        }
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
 
         if (kerapac == null || isPlayerDead() || getLocalPlayer() == null) {
@@ -753,6 +801,9 @@ public class SkeletonScript extends LoopingScript {
     private int lastAnimationId = -1;
 
     private void handleAnimation(Npc npc, int animationId) {
+        if (!scriptRunning) {
+            return;
+        }
         Npc kerapac = NpcQuery.newQuery().name("Kerapac, the bound").results().first();
         if (kerapac != null && getLocalPlayer() != null) {
             TeleportToWarOnHealth();
@@ -837,6 +888,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void loot() {
+        if (!scriptRunning) {
+            return;
+        }
         if (getLocalPlayer() != null) {
 
             EntityResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
@@ -883,6 +937,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void Transition() {
+        if (!scriptRunning) {
+            return;
+        }
         if (Client.getLocalPlayer() != null) {
 
             Pattern itemPattern = Pattern.compile("prayer|restore", Pattern.CASE_INSENSITIVE);
@@ -927,6 +984,9 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void TeleportToWarOnHealth() {
+        if (!scriptRunning) {
+            return;
+        }
         if (eatfood || useSaraBrew || useSaraBrewandBlubber) {
             final int warsRetreatRegionId = 13214; // Assuming 13214 is the region ID for War's Retreat
             LocalPlayer player = Client.getLocalPlayer();
@@ -1022,6 +1082,9 @@ public class SkeletonScript extends LoopingScript {
 
 
     private void DeactivatePrayers() {
+        if (!scriptRunning) {
+            return;
+        }
         boolean ruinationActive = VarManager.getVarbitValue(53280) != 0;
         boolean deflectMagicActive = VarManager.getVarbitValue(16768) != 0;
         boolean protectMagicActive = VarManager.getVarbitValue(16745) != 0;
