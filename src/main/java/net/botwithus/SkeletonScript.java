@@ -113,7 +113,7 @@ public class SkeletonScript extends LoopingScript {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(this.getConsole(), this);
         loadConfiguration();
-        this.loopDelay = 600;
+        this.loopDelay = 100;
     }
 
     public void startScript() {
