@@ -595,7 +595,7 @@ public class SkeletonScript extends LoopingScript {
 
         if (ActionBar.getCooldown("Surge") == 0) {
             ScriptConsole.println("Used Surge: " + ActionBar.useAbility("Surge"));
-            Execution.delay(RandomGenerator.nextInt(1750, 1800));
+            Execution.delay(RandomGenerator.nextInt(1850, 1900));
             firstSurgeSuccessful = true;
 
             if (ActionBar.getCooldown("Surge") == 0) {
