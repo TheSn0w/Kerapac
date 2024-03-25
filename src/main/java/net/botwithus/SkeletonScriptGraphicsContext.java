@@ -25,8 +25,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private String prayerFeedbackMessage = "";
     private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
-    private String minDelayStr = "320";
-    private String maxDelayStr = "360";
+    private String minDelayStr = "550";
+    private String maxDelayStr = "600";
     private String username = "";
     private String delayUpdateFeedback = ""; // Store feedback messages
     private static float RGBToFloat(int rgbValue) {

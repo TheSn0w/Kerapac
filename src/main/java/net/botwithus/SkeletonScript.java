@@ -1596,8 +1596,8 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-    private int minDelay = 320;
-    private int maxDelay = 360;
+    private int minDelay = 550;
+    private int maxDelay = 600;
 
     public int getMinDelay() {
         return minDelay;
