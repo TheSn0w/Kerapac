@@ -83,7 +83,6 @@ public class SkeletonScript extends LoopingScript {
     boolean startAtPortal;
     private boolean hasUsedInvokeDeath = false;
     private boolean luckOfTheDwarvesUsed = false;
-    private boolean hasUsedWeaponPoison = false;
     private long lastVulnBombAttemptTime = 0;
     private int tickCounter = 0;
     private boolean scriptRunning = false;
@@ -1261,7 +1260,7 @@ public class SkeletonScript extends LoopingScript {
     public void useWeaponPoison() {
         Player localPlayer = getLocalPlayer();
         if (localPlayer != null) {
-            if (VarManager.getVarbitValue(2102) <= 3 && !hasUsedWeaponPoison) { // 2102 = time remaining 18068, animation ID for drinking / 45317 = 4 on weapon poison+++
+            if (VarManager.getVarbitValue(2102) <= 3 && getLocalPlayer().getAnimationId() != 18068) { // 2102 = time remaining 18068, animation ID for drinking / 45317 = 4 on weapon poison+++
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
                 Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
 
@@ -1278,7 +1277,7 @@ public class SkeletonScript extends LoopingScript {
                     println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
                     Backpack.interact(weaponPoisonItem.getName(), "Apply");
                     println(weaponPoisonItem.getName() + "Has been applied");
-                    hasUsedWeaponPoison = true;
+                    Execution.delay(RandomGenerator.nextInt(600, 700));
 
                 }
             }
