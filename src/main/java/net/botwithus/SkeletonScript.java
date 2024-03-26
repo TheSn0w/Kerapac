@@ -38,10 +38,12 @@ import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
 import net.botwithus.rs3.util.Regex;
 
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -655,26 +657,20 @@ public class SkeletonScript extends LoopingScript {
         }
         int animationID = kerapac.getAnimationId();
 
-        // Detect the start of the sequence (animation 34193)
         if (animationID == 34193) {
             animation34193Started = true;
-            println("Detected start of Kerapac animation sequence.");
         }
 
-        // Check if the active animation is one of the specified ones
         kerapacAnimationActive = animationID == 34194 || animationID == 34198 || animationID == 34195 || (animation34193Started && animationID == 34193);
 
-        // If animation 34194 is detected and animation 34193 had started, conclude the sequence
         if (animation34193Started && animationID == 34194) {
-            animation34193Started = false; // Reset the flag for animation 34193
-            kerapacAnimationActive = false; // Indicate the end of the animation sequence
+            animation34193Started = false;
+            kerapacAnimationActive = false;
             println("Handled Kerapac animation sequence. Ready to proceed with actions.");
         }
 
         if (kerapacAnimationActive) {
-            println("Handling logic before doing anything else: " + kerapacAnimationActive);
     } else {
-            // If Kerapac is not found, reset the flags
             animation34193Started = false;
             kerapacAnimationActive = false;
         }
@@ -709,7 +705,7 @@ public class SkeletonScript extends LoopingScript {
         int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
 
         if (useVolleyofSouls) {
-            if (!kerapacAnimationActive && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+            if (!kerapacAnimationActive && !animation34193Started && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
                     && RisidualSouls == 5) {
                 println("Risidual Souls: " + RisidualSouls);
                 ScriptConsole.println("Used Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
@@ -718,7 +714,7 @@ public class SkeletonScript extends LoopingScript {
         }
 
         if (useEssenceOfFinality) {
-            if (!kerapacAnimationActive && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+            if (!kerapacAnimationActive && !animation34193Started && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
                     && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().getAdrenaline() >= 300
                     & ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty() && NecrosisStacks >= 12) {
                 if (ActionBar.getCooldown("Death Skulls") >= 5) {
@@ -1162,8 +1158,12 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
+    private static long lastPrayerOrRestoreUse = 0; // Static variable to track the last use time
+
     public void usePrayerOrRestorePots() {
-        if (getLocalPlayer() != null && !kerapacAnimationActive) {
+        long currentTime = System.currentTimeMillis();
+
+        if (getLocalPlayer() != null && !kerapacAnimationActive && !animation34193Started && (currentTime - lastPrayerOrRestoreUse) > 2000) { // Check if 2 seconds have passed
             int currentPrayerPoints = getLocalPlayer().getPrayerPoints();
             if (currentPrayerPoints < prayerPointsThreshold) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
@@ -1175,11 +1175,12 @@ public class SkeletonScript extends LoopingScript {
                         .orElse(null);
 
                 if (prayerOrRestorePot != null) {
-                    println("Drinking " + prayerOrRestorePot.getName());
+                    println("Attempting to drink " + prayerOrRestorePot.getName());
                     boolean success = Backpack.interact(prayerOrRestorePot.getName(), "Drink");
 
                     if (success) {
-                        Execution.delay(RandomGenerator.nextInt(1180, 1220));
+                        println("Drinking " + prayerOrRestorePot.getName());
+                        lastPrayerOrRestoreUse = currentTime; // Update the last use time on success
                     } else {
                         println("Failed to use " + prayerOrRestorePot.getName());
                     }
@@ -1192,8 +1193,12 @@ public class SkeletonScript extends LoopingScript {
 
     Pattern overloads = Pattern.compile(Regex.getPatternForContainsString("overload").pattern(), Pattern.CASE_INSENSITIVE);
 
+    private static long lastOverloadUse = 0; // Static variable to track the last use time
+
     public void drinkOverloads() {
-        if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0 && !kerapacAnimationActive) {
+        long currentTime = System.currentTimeMillis();
+
+        if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0 && !kerapacAnimationActive && !animation34193Started && (currentTime - lastOverloadUse) > 2000) { // Check if 2 seconds have passed
             ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
             Item overloadPot = items.stream()
@@ -1202,11 +1207,12 @@ public class SkeletonScript extends LoopingScript {
                     .orElse(null);
 
             if (overloadPot != null) {
-                println("Drinking " + overloadPot.getName());
+                println("Attempting to drink " + overloadPot.getName());
                 boolean success = Backpack.interact(overloadPot.getName(), "Drink");
 
                 if (success) {
-                    Execution.delay(RandomGenerator.nextInt(1180, 1220));
+                    println("Drinking " + overloadPot.getName());
+                    lastOverloadUse = currentTime; // Update the last use time on success
                 } else {
                     println("Failed to use " + overloadPot.getName());
                 }
@@ -1215,9 +1221,12 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+    private static long lastFoodEatTime = 0; // Static variable to track the last time food was eaten
 
     public void eatFood() {
-        if (!kerapacAnimationActive) {
+        long currentTime = System.currentTimeMillis();
+
+        if (!kerapacAnimationActive && !animation34193Started) {
             if (getLocalPlayer() != null) {
                 if (getLocalPlayer().getAnimationId() == 18001)
                     return;
@@ -1226,17 +1235,16 @@ public class SkeletonScript extends LoopingScript {
                 int maximumHealth = getLocalPlayer().getMaximumHealth();
 
                 int healthPercentage = currentHealth * 100 / maximumHealth;
-                if (healthPercentage < healthThreshold) {
+                if (healthPercentage < healthThreshold && (currentTime - lastFoodEatTime) > 2000) { // Ensure the cooldown has elapsed
                     ResultSet<Item> foodItems = InventoryItemQuery.newQuery(93).option("Eat").results();
 
                     if (!foodItems.isEmpty()) {
                         Item food = foodItems.first();
                         if (food != null) {
-                            println("Attempting to eat " + food.getName());
                             boolean success = Backpack.interact(food.getName(), 1);
                             if (success) {
                                 println("Eating " + food.getName());
-                                Execution.delay(RandomGenerator.nextInt(600, 700));
+                                lastFoodEatTime = currentTime; // Update the last eat time on success
                             } else {
                                 println("Failed to eat " + food.getName());
                             }
@@ -1283,12 +1291,15 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
-
+    private static long lastWeaponPoisonUse = 0; // Static variable to track the last use time
 
     public void useWeaponPoison() {
+        long currentTime = System.currentTimeMillis();
         Player localPlayer = getLocalPlayer();
-        if (localPlayer != null && !kerapacAnimationActive) {
-            if (VarManager.getVarbitValue(2102) <= 3 && getLocalPlayer().getAnimationId() != 18068) { // 2102 = time remaining 18068, animation ID for drinking / 45317 = 4 on weapon poison+++
+
+        if (localPlayer != null && !kerapacAnimationActive && !animation34193Started) {
+            // Check if weapon poison is needed and if the cooldown has elapsed
+            if (VarManager.getVarbitValue(2102) <= 3 && localPlayer.getAnimationId() != 18068 && (currentTime - lastWeaponPoisonUse) > 2000) { // Adding check for 2 seconds cooldown
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
                 Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
 
@@ -1301,12 +1312,18 @@ public class SkeletonScript extends LoopingScript {
                         .findFirst()
                         .orElse(null);
 
-                if (weaponPoisonItem != null) {
+                if (weaponPoisonItem != null && (currentTime - lastWeaponPoisonUse) <= 2000) {
                     println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
-                    Backpack.interact(weaponPoisonItem.getName(), "Apply");
-                    println(weaponPoisonItem.getName() + "Has been applied");
-                    Execution.delay(RandomGenerator.nextInt(600, 700));
+                    boolean success = Backpack.interact(weaponPoisonItem.getName(), "Apply");
 
+                    if (success) {
+                        println(weaponPoisonItem.getName() + " has been applied");
+                        lastWeaponPoisonUse = currentTime; // Update the last use time
+                    } else {
+                        println("Failed to apply " + weaponPoisonItem.getName());
+                    }
+                } else {
+                    println("No Weapon Poison found.");
                 }
             }
         }
@@ -1439,7 +1456,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void useDarkness() {
-        if (getLocalPlayer() != null && !kerapacAnimationActive) {
+        if (getLocalPlayer() != null && !kerapacAnimationActive && !animation34193Started) {
             if (!isDarknessActive()) {
                 boolean success = ActionBar.useAbility("Darkness");
                 ScriptConsole.println("Activated Darkness: " + success);
@@ -1449,7 +1466,6 @@ public class SkeletonScript extends LoopingScript {
                 messagePrinted = false;
             } else {
                 if (!messagePrinted && darknessActivated) {
-                    ScriptConsole.println("Darkness previously activated, skipping.");
                     messagePrinted = true; // Set the flag after printing the message
                 }
             }
@@ -1457,7 +1473,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void UseSaraBrew() {
-        if (!kerapacAnimationActive) {
+        if (!kerapacAnimationActive && !animation34193Started) {
             if (getLocalPlayer() != null) {
                 int currentHealth = getLocalPlayer().getCurrentHealth();
                 int maximumHealth = getLocalPlayer().getMaximumHealth();
@@ -1477,7 +1493,6 @@ public class SkeletonScript extends LoopingScript {
                         boolean success = Backpack.interact(saraBrew.getName(), "Drink");
                         if (success) {
                             println("Drinking " + saraBrew.getName());
-                            Execution.delay(RandomGenerator.nextInt(600, 700));
                         } else {
                             println("Failed to drink " + saraBrew.getName());
                         }
@@ -1490,7 +1505,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void UseSaraandBlubber() {
-        if (!kerapacAnimationActive) {
+        if (!kerapacAnimationActive && !animation34193Started) {
             LocalPlayer player = Client.getLocalPlayer();
             if (player != null) {
                 double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
@@ -1520,15 +1535,6 @@ public class SkeletonScript extends LoopingScript {
                     } else {
                         println("No blubber items found!");
                     }
-
-                    Execution.delayUntil(RandomGenerator.nextInt(600, 650), () -> {
-                        LocalPlayer currentPlayer = Client.getLocalPlayer();
-                        if (currentPlayer != null) {
-                            double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
-                            return currentHealthPercentage > 90;
-                        }
-                        return false;
-                    });
                 }
             }
         }

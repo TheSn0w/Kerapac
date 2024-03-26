@@ -139,8 +139,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 if (ImGui.BeginTabItem("Thresholds", ImGuiWindowFlag.None.getValue())) {
                     ImGui.PushStyleColor(0, RGBToFloat(173), RGBToFloat(216), RGBToFloat(230), 0.8f); // Button color
                     ImGui.SeparatorText("Food/Prayer Options");
-                    script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
-                    script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
+                   /* script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
+                    script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);*/
                     script.eatfood = ImGui.Checkbox("Eat Food", script.eatfood);
                     ImGui.SetItemWidth(50);
                     healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
