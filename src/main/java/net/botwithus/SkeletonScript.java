@@ -1298,7 +1298,6 @@ public class SkeletonScript extends LoopingScript {
         Player localPlayer = getLocalPlayer();
 
         if (localPlayer != null && !kerapacAnimationActive && !animation34193Started) {
-            // Check if weapon poison is needed and if the cooldown has elapsed
             if (VarManager.getVarbitValue(2102) <= 3 && localPlayer.getAnimationId() != 18068 && (currentTime - lastWeaponPoisonUse) > 2000) { // Adding check for 2 seconds cooldown
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
                 Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
@@ -1312,18 +1311,10 @@ public class SkeletonScript extends LoopingScript {
                         .findFirst()
                         .orElse(null);
 
-                if (weaponPoisonItem != null && (currentTime - lastWeaponPoisonUse) <= 2000) {
+                if (weaponPoisonItem != null) {
                     println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
-                    boolean success = Backpack.interact(weaponPoisonItem.getName(), "Apply");
-
-                    if (success) {
-                        println(weaponPoisonItem.getName() + " has been applied");
-                        lastWeaponPoisonUse = currentTime; // Update the last use time
-                    } else {
-                        println("Failed to apply " + weaponPoisonItem.getName());
-                    }
-                } else {
-                    println("No Weapon Poison found.");
+                    Backpack.interact(weaponPoisonItem.getName(), "Apply");
+                    println(weaponPoisonItem.getName() + "Has been applied");
                 }
             }
         }
