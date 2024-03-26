@@ -640,6 +640,8 @@ public class SkeletonScript extends LoopingScript {
             ScriptConsole.println("Used Conjure Skeleton Warrior: " + ActionBar.useAbility("Conjure Skeleton Warrior"));
         }
     }
+    private boolean kerapacAnimationActive = false;
+    private boolean animation34193Started = false;
 
     private void monitorKerapacAnimations() {
         if (!scriptRunning) {
@@ -651,6 +653,32 @@ public class SkeletonScript extends LoopingScript {
             botState = BotState.DEATHS_OFFICE;
             return;
         }
+        int animationID = kerapac.getAnimationId();
+
+        // Detect the start of the sequence (animation 34193)
+        if (animationID == 34193) {
+            animation34193Started = true;
+            println("Detected start of Kerapac animation sequence.");
+        }
+
+        // Check if the active animation is one of the specified ones
+        kerapacAnimationActive = animationID == 34194 || animationID == 34198 || animationID == 34195 || (animation34193Started && animationID == 34193);
+
+        // If animation 34194 is detected and animation 34193 had started, conclude the sequence
+        if (animation34193Started && animationID == 34194) {
+            animation34193Started = false; // Reset the flag for animation 34193
+            kerapacAnimationActive = false; // Indicate the end of the animation sequence
+            println("Handled Kerapac animation sequence. Ready to proceed with actions.");
+        }
+
+        if (kerapacAnimationActive) {
+            println("Handling logic before doing anything else: " + kerapacAnimationActive);
+    } else {
+            // If Kerapac is not found, reset the flags
+            animation34193Started = false;
+            kerapacAnimationActive = false;
+        }
+
         if (eatfood) {
             eatFood();
         }
@@ -681,7 +709,7 @@ public class SkeletonScript extends LoopingScript {
         int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
 
         if (useVolleyofSouls) {
-            if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+            if (!kerapacAnimationActive && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
                     && RisidualSouls == 5) {
                 println("Risidual Souls: " + RisidualSouls);
                 ScriptConsole.println("Used Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
@@ -690,7 +718,7 @@ public class SkeletonScript extends LoopingScript {
         }
 
         if (useEssenceOfFinality) {
-            if (kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
+            if (!kerapacAnimationActive && kerapac.getAnimationId() != 34198 && kerapac.getAnimationId() != 34199 && kerapac.getAnimationId() != 34194 && kerapac.getAnimationId() != 34202
                     && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().getAdrenaline() >= 300
                     & ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty() && NecrosisStacks >= 12) {
                 if (ActionBar.getCooldown("Death Skulls") >= 5) {
@@ -701,8 +729,6 @@ public class SkeletonScript extends LoopingScript {
             }
         }
 
-
-        int animationID = kerapac.getAnimationId();
         handleAnimation(kerapac, animationID);
 
         if (getLocalPlayer().getTarget() != null && useVulnBomb) {
@@ -1106,10 +1132,10 @@ public class SkeletonScript extends LoopingScript {
 
     private void activateScriptureOfWen() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
-            println("Activating Scripture of Jas.");
+            println("Activating Scripture of Wen.");
             Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate");
         } else {
-            println("Scripture of Jas already active or not enough Time Remaining.");
+            println("Scripture of Wen already active or not enough Time Remaining.");
         }
     }
 
@@ -1137,7 +1163,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void usePrayerOrRestorePots() {
-        if (getLocalPlayer() != null) {
+        if (getLocalPlayer() != null && !kerapacAnimationActive) {
             int currentPrayerPoints = getLocalPlayer().getPrayerPoints();
             if (currentPrayerPoints < prayerPointsThreshold) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
@@ -1167,7 +1193,7 @@ public class SkeletonScript extends LoopingScript {
     Pattern overloads = Pattern.compile(Regex.getPatternForContainsString("overload").pattern(), Pattern.CASE_INSENSITIVE);
 
     public void drinkOverloads() {
-        if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0) {
+        if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0 && !kerapacAnimationActive) {
             ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
             Item overloadPot = items.stream()
@@ -1191,31 +1217,33 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void eatFood() {
-        if (getLocalPlayer() != null) {
-            if (getLocalPlayer().getAnimationId() == 18001)
-                return;
+        if (!kerapacAnimationActive) {
+            if (getLocalPlayer() != null) {
+                if (getLocalPlayer().getAnimationId() == 18001)
+                    return;
 
-            int currentHealth = getLocalPlayer().getCurrentHealth();
-            int maximumHealth = getLocalPlayer().getMaximumHealth();
+                int currentHealth = getLocalPlayer().getCurrentHealth();
+                int maximumHealth = getLocalPlayer().getMaximumHealth();
 
-            int healthPercentage = currentHealth * 100 / maximumHealth;
-            if (healthPercentage < healthThreshold) {
-                ResultSet<Item> foodItems = InventoryItemQuery.newQuery(93).option("Eat").results();
+                int healthPercentage = currentHealth * 100 / maximumHealth;
+                if (healthPercentage < healthThreshold) {
+                    ResultSet<Item> foodItems = InventoryItemQuery.newQuery(93).option("Eat").results();
 
-                if (!foodItems.isEmpty()) {
-                    Item food = foodItems.first();
-                    if (food != null) {
-                        println("Attempting to eat " + food.getName());
-                        boolean success = Backpack.interact(food.getName(), 1);
-                        if (success) {
-                            println("Eating " + food.getName());
-                            Execution.delay(RandomGenerator.nextInt(600, 700));
-                        } else {
-                            println("Failed to eat " + food.getName());
+                    if (!foodItems.isEmpty()) {
+                        Item food = foodItems.first();
+                        if (food != null) {
+                            println("Attempting to eat " + food.getName());
+                            boolean success = Backpack.interact(food.getName(), 1);
+                            if (success) {
+                                println("Eating " + food.getName());
+                                Execution.delay(RandomGenerator.nextInt(600, 700));
+                            } else {
+                                println("Failed to eat " + food.getName());
+                            }
                         }
+                    } else {
+                        println("No food found!");
                     }
-                } else {
-                    println("No food found!");
                 }
             }
         }
@@ -1259,7 +1287,7 @@ public class SkeletonScript extends LoopingScript {
 
     public void useWeaponPoison() {
         Player localPlayer = getLocalPlayer();
-        if (localPlayer != null) {
+        if (localPlayer != null && !kerapacAnimationActive) {
             if (VarManager.getVarbitValue(2102) <= 3 && getLocalPlayer().getAnimationId() != 18068) { // 2102 = time remaining 18068, animation ID for drinking / 45317 = 4 on weapon poison+++
                 ResultSet<Item> items = InventoryItemQuery.newQuery().results();
                 Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
@@ -1411,7 +1439,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void useDarkness() {
-        if (getLocalPlayer() != null) {
+        if (getLocalPlayer() != null && !kerapacAnimationActive) {
             if (!isDarknessActive()) {
                 boolean success = ActionBar.useAbility("Darkness");
                 ScriptConsole.println("Activated Darkness: " + success);
@@ -1429,75 +1457,79 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void UseSaraBrew() {
-        if (getLocalPlayer() != null) {
-            int currentHealth = getLocalPlayer().getCurrentHealth();
-            int maximumHealth = getLocalPlayer().getMaximumHealth();
+        if (!kerapacAnimationActive) {
+            if (getLocalPlayer() != null) {
+                int currentHealth = getLocalPlayer().getCurrentHealth();
+                int maximumHealth = getLocalPlayer().getMaximumHealth();
 
-            int healthPercentage = currentHealth * 100 / maximumHealth;
+                int healthPercentage = currentHealth * 100 / maximumHealth;
 
-            if (healthPercentage < healthThreshold) {
-                ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
+                if (healthPercentage < healthThreshold) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
-                Item saraBrew = items.stream()
-                        .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
-                        .findFirst()
-                        .orElse(null);
+                    Item saraBrew = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
+                            .findFirst()
+                            .orElse(null);
 
-                if (saraBrew != null) {
-                    println("Attempting to drink " + saraBrew.getName());
-                    boolean success = Backpack.interact(saraBrew.getName(), "Drink");
-                    if (success) {
-                        println("Drinking " + saraBrew.getName());
-                        Execution.delay(RandomGenerator.nextInt(600, 700));
+                    if (saraBrew != null) {
+                        println("Attempting to drink " + saraBrew.getName());
+                        boolean success = Backpack.interact(saraBrew.getName(), "Drink");
+                        if (success) {
+                            println("Drinking " + saraBrew.getName());
+                            Execution.delay(RandomGenerator.nextInt(600, 700));
+                        } else {
+                            println("Failed to drink " + saraBrew.getName());
+                        }
                     } else {
-                        println("Failed to drink " + saraBrew.getName());
+                        println("No Saradomin brews found!");
                     }
-                } else {
-                    println("No Saradomin brews found!");
                 }
             }
         }
     }
 
     private void UseSaraandBlubber() {
-        LocalPlayer player = Client.getLocalPlayer();
-        if (player != null) {
-            double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
-            if (healthPercentage < healthThreshold) {
-                ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+        if (!kerapacAnimationActive) {
+            LocalPlayer player = Client.getLocalPlayer();
+            if (player != null) {
+                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
+                if (healthPercentage < healthThreshold) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
-                Item saraBrew = items.stream()
-                        .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
-                        .findFirst()
-                        .orElse(null);
+                    Item saraBrew = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
+                            .findFirst()
+                            .orElse(null);
 
-                if (saraBrew != null) {
-                    Backpack.interact(saraBrew.getName(), "Drink");
-                    println("Drinking " + saraBrew.getName());
-                } else {
-                    println("No Saradomin brews found!");
-                }
-
-                Item blubberItem = items.stream()
-                        .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("blubber"))
-                        .findFirst()
-                        .orElse(null);
-
-                if (blubberItem != null) {
-                    Backpack.interact(blubberItem.getName(), "Eat");
-                    println("Eating " + blubberItem.getName());
-                } else {
-                    println("No blubber items found!");
-                }
-
-                Execution.delayUntil(RandomGenerator.nextInt(600, 650), () -> {
-                    LocalPlayer currentPlayer = Client.getLocalPlayer();
-                    if (currentPlayer != null) {
-                        double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
-                        return currentHealthPercentage > 90;
+                    if (saraBrew != null) {
+                        Backpack.interact(saraBrew.getName(), "Drink");
+                        println("Drinking " + saraBrew.getName());
+                    } else {
+                        println("No Saradomin brews found!");
                     }
-                    return false;
-                });
+
+                    Item blubberItem = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("blubber"))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (blubberItem != null) {
+                        Backpack.interact(blubberItem.getName(), "Eat");
+                        println("Eating " + blubberItem.getName());
+                    } else {
+                        println("No blubber items found!");
+                    }
+
+                    Execution.delayUntil(RandomGenerator.nextInt(600, 650), () -> {
+                        LocalPlayer currentPlayer = Client.getLocalPlayer();
+                        if (currentPlayer != null) {
+                            double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
+                            return currentHealthPercentage > 90;
+                        }
+                        return false;
+                    });
+                }
             }
         }
     }
