@@ -549,7 +549,7 @@ public class SkeletonScript extends LoopingScript {
         if (!scriptRunning) {
             return;
         }
-        Execution.delay(RandomGenerator.nextInt(1250, 1500));
+        Execution.delay(RandomGenerator.nextInt(2000, 2500));
         EntityResultSet<SceneObject> results = SceneObjectQuery.newQuery().id(120046).option("Enter").results();
         if (!results.isEmpty()) {
             SceneObject colloseum = results.nearest();
@@ -994,7 +994,7 @@ public class SkeletonScript extends LoopingScript {
                 if (Interfaces.isOpen(1188)) {
                     Execution.delay(RandomGenerator.nextInt(300, 500));
                     MiniMenu.interact(ComponentAction.DIALOGUE.getType(), 0, -1, 77856776);
-                    Execution.delay(RandomGenerator.nextInt(5000, 6000));
+                    Execution.delay(RandomGenerator.nextInt(9000, 10000));
                     botState = BotState.KERAPACPORTAL;
                 }
             } else {
