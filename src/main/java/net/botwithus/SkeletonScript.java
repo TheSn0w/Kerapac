@@ -670,7 +670,7 @@ public class SkeletonScript extends LoopingScript {
         }
 
         if (kerapacAnimationActive) {
-    } else {
+        } else {
             animation34193Started = false;
             kerapacAnimationActive = false;
         }
@@ -1708,4 +1708,3 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 }
-//test
